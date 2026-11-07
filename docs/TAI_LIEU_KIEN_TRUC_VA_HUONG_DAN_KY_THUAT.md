@@ -277,3 +277,4 @@ De phuc vu viec bao cao nghiem thu mon hoc, sinh vien can ghi hinh va bat goi ti
      `git commit -m "feat(network): implement udp broadcast receiver thread"`
   3. Tuyet doi khong su dung cac ky tu bieu tuong cam xuc (emoji) trong commit message, chu thich ma nguon va tai lieu.
   4. Day len remote va tao Pull Request de cac thanh vien cung review truoc khi gop vao `main`.
+

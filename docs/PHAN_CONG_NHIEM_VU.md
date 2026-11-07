@@ -1,119 +1,112 @@
-# BANG PHAN CONG NHIEM VU VA KE HOACH THUC HIEN DO AN
+# BANG PHAN CONG NHIEM VU DO AN
 ## MON HOC: MANG MAY TINH (CSC10008) - HCMUS
-## DE TAI: UNG DUNG CHAT VA TRUYEN FILE TRONG MANG LAN THEO MO HINH PEER-TO-PEER (P2P)
+## DE TAI: UNG DUNG TRO CHUYEN VA CHIA SE TEP TIN TRONG MANG LAN THEO MO HINH PEER-TO-PEER (P2P)
 
 ---
 
-### THONG TIN CHUNG
+### 1. THONG TIN CHUNG
 - Truong: Dai hoc Khoa hoc Tu nhien - Dai hoc Quoc gia TP.HCM
 - Khoa: Cong nghe Thong tin
 - Mon hoc: Mang may tinh (CSC10008)
 - De tai: Xay dung ung dung tro chuyen va chia se file ngang hang trong mang LAN
-- Ngon ngu va Nen tang: C++17, Qt6 Widgets, Windows Sockets (Winsock2), CMake, Ninja
+- Ngon ngu va Nen tang: C++17, Qt6 Widgets, Windows Sockets 2 (ws2_32), CMake, Ninja
 - Kho ma nguon (GitHub): https://github.com/VN-DEV/HCMUS-Socket-Project
 
 ---
 
-### DANH SACH THANH VIEN DANG KY
+### 2. DANH SACH THANH VIEN VA TY LE DONG GOP
+
+Tat ca thanh vien co vai tro va ty le dong gop dong deu nhau (33.3% moi nguoi):
 
 1. Nguyen Manh Tri
    - Vai tro: Thanh vien
-   - Linh vuc phu trach: Giao thuc mang & Co che Peer Discovery (UDP)
+   - Linh vuc phu trach chinh: Giao dien nguoi dung (Qt6 UI), Giao thuc mang & Peer Discovery (UDP)
+   - Ty le dong gop: 33.3%
 
 2. Do Duy Truong
    - Vai tro: Thanh vien
-   - Linh vuc phu trach: Mang TCP & Xu ly Ket noi Tin nhan (TCP Messaging)
+   - Linh vuc phu trach chinh: He thong TCP Listening Server & Xu ly Ket noi Tin nhan (TCP Messaging)
+   - Ty le dong gop: 33.3%
 
 3. Mai Huu Tri
    - Vai tro: Thanh vien
-   - Linh vuc phu trach: Giao dien nguoi dung (Qt6 UI) & Module Truyen File (TCP File Transfer)
+   - Linh vuc phu trach chinh: Module Truyen File Chunked 64KB (TCP) & Dieu phoi Phien Chat (Chat Manager)
+   - Ty le dong gop: 33.3%
 
 ---
 
-### PHAN CONG CHI TIET TUNG THANH VIEN
+### 3. CHI TIET PHAN CONG NHIEM VU TUNG THANH VIEN
 
-#### THANH VIEN 1: NGUYEN MANH TRI
-Phu trach module: Giao thuc, Dong goi du lieu & Peer Discovery (UDP)
+#### 3.1. THANH VIEN: NGUYEN MANH TRI (33.3%)
+Phu trach module: Giao dien nguoi dung (Qt6 Widgets), Giao thuc Mang & Peer Discovery (UDP)
 
-1. Thiet ke va dinh nghia giao thuc tang ung dung (src/protocol/Protocol.h, src/protocol/Protocol.cpp):
-   - Xay dung bo dinh dang goi tin UDP: HELLO|<name>|<tcp_port>|<status>
-   - Xay dung bo dinh dang goi tin TCP Bat tay: AUTH|<name>|<tcp_port>|
+1. Thiet ke va Lap trinh Giao dien do hoa (src/ui/MainWindow.h, src/ui/MainWindow.cpp):
+   - Xay dung bo cuc giao dien truc quan 2 cot su dung QSplitter:
+     + Cot trai: Ho so nguoi dung (hien thi ten, IP, port TCP), dropdown lua chon trang thai (Online / Away), danh sach cac ban chat online (QListWidget) kem so tin nhan chua doc (Unread Count).
+     + Cot phai: Tieu de nguoi dang chat, khung lich su tro chuyen thoi gian thuc (QTextBrowser), thanh tien trinh truyen file (QProgressBar) kem nhan thong bao %, o nhap noi dung tin nhan (QLineEdit) va cac nut gui tin nhan, nut mo hop thoai chon file (QFileDialog).
+   - Ket noi cac su kien giao dien (Signals & Slots) voi backend: bat su kien click danh sach peer, go Enter/bam Send gui tin nhan, bam Send File mo hop thoai.
+   - Dam bao tinh an toan da luong giua cac luong socket Winsock va luong giao dien Qt (Main Thread).
+
+2. Thiet ke va Dinh nghia Giao thuc Tang Ung dung (src/protocol/Protocol.h, src/protocol/Protocol.cpp):
+   - Xay dung bo dinh dang va phan tich goi tin UDP: HELLO|<name>|<tcp_port>|<status>
+   - Xay dung bo dinh dang va phan tich goi tin TCP Bat tay: AUTH|<name>|<tcp_port>|
    - Xay dung bo dinh dang goi tin TCP Tin nhan: MSG|<length>|<text>
    - Xay dung bo dinh dang goi tin TCP File Header: FILE|<filename>|<size>|
-   - Xay dung cac ham parser de tach du lieu (split) theo ky tu phan cach '|' an toan, chong tran bo dem.
+   - Xay dung ham split() cat chuoi an toan theo ky tu phan cach '|' ngan ngua tran bo dem.
 
-2. Phat trien module Peer Discovery bang UDP Broadcast (src/network/UdpDiscovery.h, src/network/UdpDiscovery.cpp):
-   - Tao socket UDP (AF_INET, SOCK_DGRAM), kich hoat tuy chon SO_BROADCAST va SO_REUSEADDR.
-   - Hien thuc Luong Phat (Broadcast Sender Thread): Dinh ky moi 3 giay gui broadcast toi 255.255.255.255:9999 thong bao su hien dien va trang thai (online/away).
-   - Hien thuc Luong Thu (Broadcast Listener Thread): Lang nghe tren cong 9999, tiep nhan goi HELLO, cap nhat hoac them moi vao danh ba peer.
-   - Hien thuc Luong Kiem tra Timeout (Heartbeat Timeout Thread): Dinh ky 1 giay quet danh ba, peer nao khong phat broadcast sau 10 giay se bi go khoi danh sach online.
+3. Phat trien Module Peer Discovery qua UDP Broadcast (src/network/UdpDiscovery.h, src/network/UdpDiscovery.cpp):
+   - Tao socket UDP, cau hinh tuy chon SO_BROADCAST va SO_REUSEADDR.
+   - Luong Phat (broadcastLoop): Dinh ky 3 giay phat goi HELLO toi 255.255.255.255:9999 de quang ba su hien dien.
+   - Luong Thu (listenLoop): Lang nghe cong 9999, tiep nhan goi HELLO va cap nhat danh sach online peers.
+   - Luong Kiem tra Timeout (timeoutLoop): Dinh ky 1 giay quet danh ba, xoa peer sau 10 giay khong co tin hieu.
+   - Cap nhat trang thai Online / Away va phat thong bao broadcast tuc thoi khi thay doi trang thai.
 
-3. Quan ly trang thai nguoi dung (src/models/Peer.h):
-   - Chuyen doi trang thai Online / Away va phat broadcast cap nhat ngay lap tuc cho cac peer khac.
-
-4. Diem khoi tao ung dung (src/main.cpp):
-   - Khoi dong Winsock (WSAStartup) va giai phong (WSACleanup).
-   - Tich hop he thong log va ho tro bat goi tin bang Wireshark tren card mang LAN / Loopback.
+4. Diem khoi dau ung dung (src/main.cpp):
+   - Khoi tao Winsock (WSAStartup) va giai phong tai nguyen mang (WSACleanup).
+   - Khoi chay ung dung giao dien QApplication.
 
 ---
 
-#### THANH VIEN 2: DO DUY TRUONG
+#### 3.2. THANH VIEN: DO DUY TRUONG (33.3%)
 Phu trach module: TCP Server & Dong bo Ket noi Tin nhan (TCP Messaging)
 
 1. Phat trien TCP Listening Server (src/network/TcpServer.h, src/network/TcpServer.cpp):
    - Tao socket TCP (AF_INET, SOCK_STREAM, IPPROTO_TCP), bat SO_REUSEADDR.
-   - Bind vao cong chi dinh (mac dinh 5000), co co che thu cong lien tiep (5001, 5002...) neu cong dang ban (ho tro chay nhieu instance tren cung 1 may tinh de test).
+   - Bind vao cong chi dinh (mac dinh 5000), tu dong thu cac cong lien tiep (5001, 5002...) neu bi trung khi chay nhieu instance tren cung 1 may.
    - Chuyen socket sang che do listen(SOMAXCONN).
-   - Phat trien Luong Accept (TCP Acceptor Thread): Goi accept() don cac ket noi den va chuyen socket ket noi cho module quan ly.
+   - Luong Chap nhan Ket noi (acceptLoop): Goi accept() don cac ket noi TCP den va chuyen socket ket noi cho module quan ly thong qua callback onNewConnection.
 
-2. Phat trien module TCP Connection (src/network/TcpConnection.h, src/network/TcpConnection.cpp):
-   - Hien thuc co che Bat tay xac thuc (Authentication Handshake): Khi ket noi thanh cong, chu dong gui AUTH|<myName>|<myTcpPort>| de hai ben biet danh tinh va luu lai so cong TCP cua nhau.
-   - Hien thuc Luong Thu Du Lieu (Receiver Worker Thread): Doc du lieu theo framing cua giao thuc.
-   - Xu ly Framing chong dinh goi (Packet Sticking) va cat goi (Packet Fragmentation): Doc ky tu phan cach, doc do dai length truoc, sau do doc chinh xac du byte noi dung.
-   - Goi callback onMessageReceived de ban tin nhan ve tang quan ly phien chat.
-   - Phat hien ngat ket noi (recv() tra ve 0 hoac SOCKET_ERROR) va don dep socket sach se, kich hoat callback onDisconnected.
+2. Phat trien Quan ly Ket noi TCP (src/network/TcpConnection.h, src/network/TcpConnection.cpp):
+   - Hien thuc co che Bat tay xac thuc (Authentication Handshake): Gui goi AUTH|<myName>|<myTcpPort>| ngay sau khi ket noi thanh cong de hai ben ghi nhan danh tinh cua nhau.
+   - Luong Thu Du Lieu (receiverLoop): Doc du lieu theo quy chuan framing tu socket TCP.
+   - Xu ly Framing chong dinh goi (Packet Sticking) va cat goi (Packet Fragmentation): Doc phan tien to MSG, trich xuat do dai length, sau do lap goi recv() cho den khi doc du dung so byte cua tin nhan truoc khi ban len tang ung dung.
+   - Goi callback onMessageReceived de chuyen tin nhan ve he thong.
+   - Nhan dien ngat ket noi (recv tra ve <= 0 hoac SOCKET_ERROR) va don dep socket an toan, kich hoat callback onDisconnected.
 
-3. Dong bo gui tin nhan an toan da luong (Thread-Safety):
-   - Su dung std::mutex dam bao chi co duy nhat 1 luong duoc phep goi send() tren cung mot socket tai mot thoi diem, tranh xung dot khi vua gui tin nhan vua truyen file.
-
----
-
-#### THANH VIEN 3: MAI HUU TRI
-Phu trach module: Truyen File Chunked (TCP) & Giao dien nguoi dung (Qt6 UI)
-
-1. Phat trien module Truyen File theo khoi qua TCP (src/network/TcpConnection.cpp, src/chat/ChatManager.cpp):
-   - Luong Gui File (File Sender Worker Thread): Mo file nhi phan (binary mode), doc kich thuoc file, gui goi tin header FILE|<filename>|<filesize>|.
-   - Chia nho file thanh tung khoi 64 KB (Chunking) va gui tuan tu qua socket.
-   - Tinh toan tien do gui phan tram (%) va kich hoat callback onProgress de cap nhat len giao dien.
-   - Luong Nhan File (File Receiver): Khi nhan header FILE, tu dong tao tap tin trong thu muc downloads/, tiep tuc doc dung so byte cua file va ghi vao dia.
-   - Xu ly bao loi khi file bi huy hoac mat ket noi giua chung.
-
-2. Quan ly Phien chat va Lich su Tin nhan (src/chat/ChatManager.h, src/chat/ChatManager.cpp):
-   - Quan ly danh sach cac ket noi dang hoat dong voi tung peer (std::map<std::string, TcpConnection*>).
-   - Luu tru lich su tin nhan theo tung peer trong RAM.
-   - Xu ly dem so tin nhan chua doc (Unread Badge / Count) khi co tin nhan den tu peer khac voi peer dang mo hoi thoai hien tai.
-
-3. Thiet ke va lap trinh Giao dien do hoa (src/ui/MainWindow.h, src/ui/MainWindow.cpp):
-   - Su dung Qt6 Widgets voi bo cuc 2 cot (QSplitter):
-     + Cot trai: Ho so nguoi dung (ten, IP, cong TCP), Dropdown doi trang thai (Online/Away), Danh sach ban be online (QListWidget) kem so tin nhan chua doc (Unread Count).
-     + Cot phai: Khung lich su tro chuyen (QTextBrowser) hien thi ro nguoi gui, gio gui va noi dung; Khung thong bao tien trinh truyen/nhan file (QProgressBar); O nhap tin nhan (QLineEdit) va cac nut chuc nang (Send, Send File).
-   - Chuyen tiep an toan tin hieu giua cac luong mang Winsock sang luong GUI cua Qt (su dung Qt Signals & Slots hoac QMetaObject::invokeMethod) tranh gay treo giao dien.
+3. Dong bo Gui Du lieu An toan Da luong (Thread-Safety):
+   - Su dung std::mutex dam bao chi co duy nhat 1 luong duoc goi send() tren cung mot socket tai mot thoi diem, ngan ngua pha vo luong byte stream khi gui dong thoi tin nhan va du lieu file.
 
 ---
 
-### KE HOACH TIEN DO THUC HIEN (TIMELINE)
+#### 3.3. THANH VIEN: MAI HUU TRI (33.3%)
+Phu trach module: Truyen File Chunked 64KB (TCP) & Dieu phoi Phien Chat (Chat Manager)
 
-| Tuan | Muc tieu can dat | Thanh vien phu trach | San pham ban giao |
-| :--- | :--- | :--- | :--- |
-| Tuan 1 (08/11 - 15/11) | Khoi tao du an, cau hinh CMake & Ninja, viet khung ma nguon, thiet ke giao thuc chi tiet | Ca 3 thanh vien | Repo GitHub chuan, ban build khung thanh cong |
-| Tuan 2 (16/11 - 22/11) | Hoan thien UDP Discovery (broadcast & timeout) va TCP Server (listen & accept) | Nguyen Manh Tri, Do Duy Truong | Danh sach peer cap nhat tu dong qua broadcast |
-| Tuan 3 (23/11 - 29/11) | Hoan thien module gui nhan tin nhan TCP va xu ly framing chong dinh goi | Do Duy Truong, Mai Huu Tri | Chat 1-1 qua TCP hoat dong on dinh |
-| Tuan 4 (30/11 - 06/12) | Phat trien truyen file chunked 64KB va ghep noi giao dien Qt6 Widgets hoan chinh | Mai Huu Tri, Nguyen Manh Tri | Gui duoc file, hien thi tien do % tren giao dien |
-| Tuan 5 (07/12 - 14/12) | Kiem thu toan dien (Stress test, nhieu client tren LAN, bat goi Wireshark), viet bao cao | Ca 3 thanh vien | Bao cao PDF, file .pcapng bat goi tin, video demo |
+1. Phat trien Module Truyen Tap tin theo khoi qua TCP (src/network/TcpConnection.cpp):
+   - Luong Gui File (sendFileWorker): Mo tap tin nhi phan, lay kich thuoc file, gui header FILE|<filename>|<filesize>|.
+   - Chia nho file thanh cac khoi 64 KB (65,536 bytes) va goi send() tuan tu qua socket.
+   - Tinh toan tien do phan tram: percent = (sentBytes * 100) / fileSize va kich hoat callback onProgress de cap nhat len thanh tien trinh giao dien theo thoi gian thuc.
+   - Luong Nhan File: Doc header FILE, tao file moi trong thu muc downloads/, tiep tuc doc dung so byte cua file va ghi xuong o dia.
+   - Xu ly xoa file tam neu qua trinh truyen file bi gian doan hoac gap loi ket noi.
+
+2. Phat trien Bo Dieu phoi Phien chat (src/chat/ChatManager.h, src/chat/ChatManager.cpp):
+   - Quan ly danh sach cac doi tuong ket noi TCP dang hoat dong voi tung peer (std::map<std::string, TcpConnection*>).
+   - Luu tru lich su tat ca tin nhan trong RAM theo tung peer (std::map<std::string, std::vector<ChatMessage>>).
+   - Xu ly chuyen doi ban chat khi nguoi dung chon peer tren giao dien (selectPartner).
+   - Quan ly bo dem so tin nhan chua doc (Unread Count): Khi nhan tin nhan tu peer khac voi nguoi dang mo hoi thoai hien tai, tu dong tang bien dem va kich hoat callback onUnreadCountChanged de cap nhat so hien thi tren danh sach ban be.
 
 ---
 
-### TIEU CHI DANH GIA DONG GOP
-- Tat ca thanh vien dong gop ngang nhau (33.3% moi nguoi).
-- Ma nguon duoc quan ly thong qua GitHub Issues va Pull Requests tren branch rieng truoc khi merge vao main.
-- Moi commit tuan thu quy tac ro rang, ghi chu thich day du, khong su dung emoji.
+### 4. TIEU CHI DANH GIA DONG GOP VA QUY UOC LAM VIEC
+- Tat ca 3 thanh vien dong gop dong deu 33.3% khoi luong cong viec cua do an.
+- Ma nguon duoc quan ly tap trung tren GitHub, phat trien tren cac nhanh (branch) rieng va merge vao main qua Pull Request.
+- Moi commit tuan thu quy tac ro rang, ghi chu thich day du, khong su dung bat ky ky tu bieu tuong cam xuc (emoji) nao.

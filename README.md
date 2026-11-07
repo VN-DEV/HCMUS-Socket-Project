@@ -11,11 +11,11 @@ Do an mon hoc Mang may tinh (CSC10008) - Truong Dai hoc Khoa hoc Tu nhien, Dai h
 Tat ca thanh vien co vai tro va ty le dong gop nhu nhau (33.3% moi nguoi):
 
 1. Nguyen Manh Tri
-   - Linh vuc phu trach: Thiet ke Giao thuc Tang Ung dung, Dong goi Du lieu & Co che Peer Discovery (UDP Broadcast, Heartbeat, Timeout).
+   - Linh vuc phu trach: Giao dien nguoi dung (Qt6 Widgets UI), Thiet ke Giao thuc Tang Ung dung, Dong goi Du lieu & Co che Peer Discovery (UDP Broadcast, Heartbeat, Timeout).
 2. Do Duy Truong
    - Linh vuc phu trach: He thong TCP Listening Server, Quan ly Ket noi Tin nhan 1-1, Xu ly Message Framing chong dinh/cat goi.
 3. Mai Huu Tri
-   - Linh vuc phu trach: Module Truyen File theo khoi 64KB (TCP Chunked Transfer), Dieu phoi Phien chat, Thiet ke va Lap trinh Giao dien Qt6 Widgets.
+   - Linh vuc phu trach: Module Truyen File theo khoi 64KB (TCP Chunked Transfer), Dieu phoi Phien chat (Chat Manager), Quan ly Lich su Tin nhan va So tin nhan chua doc.
 
 Chi tiet phan cong nhiem vu xem tai:
 - Tai lieu Markdown: [docs/PHAN_CONG_NHIEM_VU.md](docs/PHAN_CONG_NHIEM_VU.md)
