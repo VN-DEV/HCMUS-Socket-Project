@@ -14,12 +14,14 @@
  * NGƯỜI PHỤ TRÁCH: Nguyễn Mạnh Trí
  * 
  * MÔ TẢ:
- * Hiện thực giao diện đồ họa chuẩn phong cách Discord Dark Theme:
- * - Thiết kế bo góc hiện đại (Rounded Corners 8px - 14px) toàn diện trên mọi panel.
- * - Nền cửa sổ ngoài #1E1F22, Sidebar #2B2D31 (bo góc 12px), Chat Area #313338 (bo góc 12px).
- * - Thanh User Profile mini dạng card bo góc 10px cố định ở đáy Sidebar.
- * - Thanh nhập liệu nổi #383A40 bo tròn 12px, nút bấm bo góc 8px.
- * - Khung tin nhắn dạng card bo góc 8px nhẹ nhàng.
+ * Hiện thực giao diện đồ họa chuẩn phong cách Discord Sidebar + Messenger Chat Bubbles:
+ * - Cột Sidebar bên trái: Discord Dark Theme (#2B2D31), bo góc 12px.
+ * - Khung trò chuyện bên phải: QScrollArea chứa các bong bóng tin nhắn bo tròn
+ *   chuẩn Messenger (Messenger Rounded Pill Bubbles):
+ *   + Tin nhắn gửi đi (phải): Nằm sát lề phải, bong bóng đỏ san hô (#D33A2C) bo tròn
+ *     18px ôm sát nội dung chữ (giống hệt ảnh chụp Messenger).
+ *   + Tin nhắn nhận về (trái): Nằm sát lề trái kèm avatar tròn ở góc dưới, bong bóng
+ *     xám tối (#383A40) bo tròn 18px ôm sát chữ.
  * ============================================================================
  */
 
@@ -30,7 +32,7 @@ MainWindow::MainWindow(QWidget* parent)
     setMinimumSize(850, 560);
 
     setupUi();
-    applyDiscordStyleSheet();
+    applyStyleSheet();
     initMockData();
 }
 
@@ -41,7 +43,7 @@ void MainWindow::setupUi() {
     centralWidget->setObjectName("centralWidget");
     setCentralWidget(centralWidget);
 
-    // Layout gốc có khoảng đệm 10px tạo hiệu ứng các panel nổi bo góc
+    // Layout gốc đệm 10px tạo hiệu ứng các panel nổi bo góc
     QHBoxLayout* rootLayout = new QHBoxLayout(centralWidget);
     rootLayout->setContentsMargins(10, 10, 10, 10);
     rootLayout->setSpacing(10);
@@ -107,7 +109,7 @@ void MainWindow::setupUi() {
     mainSplitter->addWidget(leftPanel);
 
     // ========================================================================
-    // 2. CỘT PHẢI (DISCORD CHAT AREA #313338 - BO GÓC 12px)
+    // 2. CỘT PHẢI (MESSENGER BUBBLES IN DISCORD CHAT AREA #313338 - BO GÓC 12px)
     // ========================================================================
     QWidget* rightPanel = new QWidget(this);
     rightPanel->setObjectName("discordChatArea");
@@ -115,7 +117,7 @@ void MainWindow::setupUi() {
     rightLayout->setContentsMargins(0, 0, 0, 0);
     rightLayout->setSpacing(0);
 
-    // Thanh Header kênh chat ở đỉnh bo góc phía trên
+    // Thanh Header kênh chat ở đỉnh bo góc
     QWidget* chatHeaderWidget = new QWidget(rightPanel);
     chatHeaderWidget->setObjectName("discordChatHeader");
     chatHeaderWidget->setFixedHeight(52);
@@ -134,11 +136,22 @@ void MainWindow::setupUi() {
     headerLayout->addStretch();
     rightLayout->addWidget(chatHeaderWidget);
 
-    // Khung lịch sử tin nhắn phong cách Discord
-    m_chatHistoryView = new QTextBrowser(rightPanel);
-    m_chatHistoryView->setObjectName("discordMessageFeed");
-    m_chatHistoryView->setOpenExternalLinks(true);
-    rightLayout->addWidget(m_chatHistoryView, 1);
+    // Khung cuộn hiển thị bong bóng chat Messenger (QScrollArea)
+    m_chatScrollArea = new QScrollArea(rightPanel);
+    m_chatScrollArea->setObjectName("chatScrollArea");
+    m_chatScrollArea->setWidgetResizable(true);
+    m_chatScrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_chatScrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    m_scrollContent = new QWidget();
+    m_scrollContent->setObjectName("chatScrollContent");
+    m_messagesLayout = new QVBoxLayout(m_scrollContent);
+    m_messagesLayout->setContentsMargins(20, 16, 20, 16);
+    m_messagesLayout->setSpacing(6); // Khoảng cách nhỏ gọn giữa các bong bóng kiểu Messenger
+    m_messagesLayout->addStretch(1); // Đẩy các tin nhắn lên trên hoặc giữ cuộn mượt mà
+
+    m_chatScrollArea->setWidget(m_scrollContent);
+    rightLayout->addWidget(m_chatScrollArea, 1);
 
     // Khung tiến độ truyền file (Embed card #2B2D31, bo góc 10px, viền Blurple)
     m_fileProgressContainer = new QWidget(rightPanel);
@@ -205,7 +218,7 @@ void MainWindow::setupUi() {
     connect(m_statusCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onStatusChanged);
 }
 
-void MainWindow::applyDiscordStyleSheet() {
+void MainWindow::applyStyleSheet() {
     QString qss = R"(
         /* Nền tối sâu Discord của toàn bộ cửa sổ */
         #centralWidget {
@@ -213,14 +226,12 @@ void MainWindow::applyDiscordStyleSheet() {
         }
 
         QWidget {
-            font-family: 'gg sans', 'Whitney', 'Segoe UI', Arial, sans-serif;
+            font-family: 'Segoe UI', Arial, sans-serif;
             font-size: 13.5px;
             color: #DBDEE1;
         }
 
-        /* ====================================================================
-         * 1. CỘT TRÁI (SIDEBAR #2B2D31) - BO GÓC 12px
-         * ==================================================================== */
+        /* 1. Sidebar bên trái (Discord #2B2D31) */
         #discordSidebar {
             background-color: #2B2D31;
             border-radius: 12px;
@@ -247,7 +258,7 @@ void MainWindow::applyDiscordStyleSheet() {
             height: 40px;
             padding: 6px 12px;
             margin-bottom: 3px;
-            border-radius: 8px; /* Bo góc danh sách bạn bè */
+            border-radius: 8px;
             color: #949BA4;
             font-weight: 500;
         }
@@ -263,10 +274,10 @@ void MainWindow::applyDiscordStyleSheet() {
             font-weight: 600;
         }
 
-        /* 2. Thanh User Profile mini ở góc đáy - Bo góc 10px */
+        /* 2. Thanh User Profile mini ở góc đáy */
         #discordUserFooter {
             background-color: #232428;
-            border-radius: 10px; /* Bo góc card profile */
+            border-radius: 10px;
             border: 1px solid #1A1B1E;
         }
 
@@ -275,7 +286,7 @@ void MainWindow::applyDiscordStyleSheet() {
             color: #FFFFFF;
             font-weight: bold;
             font-size: 13px;
-            border-radius: 17px; /* Bo tròn hoàn hảo */
+            border-radius: 17px;
         }
 
         #discordUserName {
@@ -295,26 +306,16 @@ void MainWindow::applyDiscordStyleSheet() {
             background-color: #1E1F22;
             color: #23A55A;
             border: 1px solid #2B2D31;
-            border-radius: 6px; /* Bo góc dropdown */
+            border-radius: 6px;
             padding: 4px 8px;
             font-size: 11.5px;
             font-weight: bold;
         }
 
-        #discordStatusCombo QAbstractItemView {
-            background-color: #1E1F22;
-            color: #DBDEE1;
-            selection-background-color: #404249;
-            border-radius: 6px;
-            outline: none;
-        }
-
-        /* ====================================================================
-         * 2. CỘT PHẢI (CHAT AREA #313338) - BO GÓC 12px
-         * ==================================================================== */
+        /* 3. Khung Chat Area (#313338) */
         #discordChatArea {
             background-color: #313338;
-            border-radius: 12px; /* Bo góc toàn bộ khung chat */
+            border-radius: 12px;
             border: 1px solid #1F2023;
         }
 
@@ -336,10 +337,45 @@ void MainWindow::applyDiscordStyleSheet() {
             color: #949BA4;
         }
 
-        #discordMessageFeed {
+        #chatScrollArea {
             background-color: transparent;
             border: none;
-            padding: 16px 20px;
+        }
+
+        #chatScrollContent {
+            background-color: transparent;
+        }
+
+        /* ====================================================================
+         * BONG BÓNG CHAT MESSENGER (CHUẨN 100% THEO HÌNH ẢNH MẪU)
+         * ==================================================================== */
+        
+        /* Tin nhắn của mình gửi đi (Bên phải): Màu đỏ san hô Messenger, bo tròn 18px */
+        #myBubble {
+            background-color: #D33A2C;
+            color: #FFFFFF;
+            border-radius: 18px;
+            padding: 8px 14px;
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+
+        /* Tin nhắn của bạn bè nhận về (Bên trái): Màu xám tối Messenger, bo tròn 18px */
+        #peerBubble {
+            background-color: #383A40;
+            color: #F2F3F5;
+            border-radius: 18px;
+            padding: 8px 14px;
+            font-size: 13.5px;
+        }
+
+        /* Avatar tròn nhỏ bên cạnh tin nhắn đối phương */
+        #chatAvatarBadge {
+            background-color: #5865F2;
+            color: #FFFFFF;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 14px;
         }
 
         /* Thanh cuộn tối màu bo góc 4px */
@@ -364,11 +400,11 @@ void MainWindow::applyDiscordStyleSheet() {
             height: 0px;
         }
 
-        /* Khung tiến độ truyền file - Bo góc 10px */
+        /* Khung tiến độ truyền file */
         #discordFileEmbed {
             background-color: #2B2D31;
             border-left: 4px solid #5865F2;
-            border-radius: 10px; /* Bo góc embed file */
+            border-radius: 10px;
             margin: 0 16px 10px 16px;
         }
 
@@ -382,7 +418,7 @@ void MainWindow::applyDiscordStyleSheet() {
         #discordProgressBar {
             background-color: #1E1F22;
             border: none;
-            border-radius: 7px; /* Bo góc thanh tiến độ */
+            border-radius: 7px;
             height: 14px;
             text-align: center;
             font-size: 10px;
@@ -395,7 +431,7 @@ void MainWindow::applyDiscordStyleSheet() {
             border-radius: 7px;
         }
 
-        /* 3. Thanh nhập liệu nổi (#383A40) - Bo góc 12px */
+        /* Thanh nhập liệu nổi bo tròn 12px */
         #discordInputContainer {
             background-color: transparent;
             border-bottom-left-radius: 12px;
@@ -404,7 +440,7 @@ void MainWindow::applyDiscordStyleSheet() {
 
         #discordInputPill {
             background-color: #383A40;
-            border-radius: 12px; /* Bo góc thanh nhập liệu */
+            border-radius: 12px;
             padding: 2px 4px;
         }
 
@@ -412,7 +448,7 @@ void MainWindow::applyDiscordStyleSheet() {
             background-color: #4E5058;
             color: #DBDEE1;
             border: none;
-            border-radius: 8px; /* Bo góc nút File */
+            border-radius: 8px;
             padding: 8px 14px;
             font-size: 12px;
             font-weight: bold;
@@ -436,17 +472,17 @@ void MainWindow::applyDiscordStyleSheet() {
         }
 
         #discordSendBtn {
-            background-color: #5865F2;
+            background-color: #D33A2C; /* Màu đỏ ton-sur-ton với bong bóng chat gửi đi */
             color: #FFFFFF;
             border: none;
-            border-radius: 8px; /* Bo góc nút Send */
+            border-radius: 8px;
             padding: 8px 18px;
             font-size: 13px;
             font-weight: bold;
         }
 
         #discordSendBtn:hover {
-            background-color: #4752C4;
+            background-color: #B52F23;
         }
     )";
     setStyleSheet(qss);
@@ -458,16 +494,68 @@ void MainWindow::initMockData() {
     addOrUpdatePeer("Bob", "192.168.1.20", 5002, "online", 0);
     addOrUpdatePeer("Charlie", "192.168.1.33", 5003, "away", 0);
 
-    // Mặc định mở cuộc trò chuyện với Alice
+    // Nạp chuỗi tin nhắn mẫu giống hệt ảnh chụp Messenger của người dùng
+    m_currentPeerKey = "192.168.1.15:5001";
+    m_currentPeerName = "Alice";
+
+    // Đoạn chat mẫu như ảnh
+    appendChatMessage("Alice", "lại", "15:28", false);
+    appendChatMessage("Alice", "xem coi có ch", "15:28", false);
+    appendChatMessage("Alice", "nào rảnh đổi mk đi", "15:29", false);
+    appendChatMessage(m_myName, "kh có m", "15:29", true);
+    appendChatMessage("Alice", "t mượn", "15:29", false);
+    appendChatMessage(m_myName, "Passchangednew_2", "15:30", true);
+    appendChatMessage("Alice", "check", "15:30", false);
+    appendChatMessage("Alice", "kh có code luôn à", "15:30", false);
+    appendChatMessage(m_myName, "kh thấy", "15:31", true);
+    appendChatMessage("Alice", "vl", "15:31", false);
+    appendChatMessage("Alice", "thua r", "15:31", false);
+
     if (m_peerListWidget->count() > 0) {
         m_peerListWidget->setCurrentRow(0);
         onPeerSelected(m_peerListWidget->item(0));
-
-        // Nạp tin nhắn mẫu phong cách bong bóng Messenger
-        appendChatMessage("Alice", "Chào Trí! Giao diện bong bóng chat Messenger nhìn quen thuộc và xịn hơn hẳn.", "15:30", false);
-        appendChatMessage(m_myName, "Đúng rồi! Cột ngoài vẫn là Discord Dark Theme, nhưng ô chứa tin nhắn thì bo tròn mềm mại kiểu Messenger.", "15:31", true);
-        appendChatMessage("Alice", "Test thử gửi file luôn đi bạn.", "15:32", false);
     }
+}
+
+void MainWindow::renderMessageBubble(const QString& sender, const QString& text, const QString& timeStr, bool isMine) {
+    QWidget* rowWidget = new QWidget(m_scrollContent);
+    QHBoxLayout* rowLayout = new QHBoxLayout(rowWidget);
+    rowLayout->setContentsMargins(0, 1, 0, 1);
+    rowLayout->setSpacing(8);
+
+    QLabel* bubble = new QLabel(text, rowWidget);
+    bubble->setWordWrap(true);
+    bubble->setMaximumWidth(480);
+    bubble->setTextInteractionFlags(Qt::TextSelectableByMouse);
+
+    if (isMine) {
+        // Tin nhắn gửi đi (Bên phải): Căn phải, bong bóng đỏ san hô bo tròn 18px
+        rowLayout->addStretch(1);
+        bubble->setObjectName("myBubble");
+        rowLayout->addWidget(bubble);
+    } else {
+        // Tin nhắn nhận về (Bên trái): Căn trái kèm avatar tròn 28px
+        QLabel* avatar = new QLabel(sender.left(1).toUpper(), rowWidget);
+        avatar->setObjectName("chatAvatarBadge");
+        avatar->setFixedSize(28, 28);
+        avatar->setAlignment(Qt::AlignCenter);
+
+        bubble->setObjectName("peerBubble");
+        rowLayout->addWidget(avatar, 0, Qt::AlignBottom);
+        rowLayout->addWidget(bubble);
+        rowLayout->addStretch(1);
+    }
+
+    // Chèn vào vị trí trước stretch cuối cùng
+    m_messagesLayout->insertWidget(m_messagesLayout->count() - 1, rowWidget);
+}
+
+void MainWindow::scrollToBottom() {
+    QTimer::singleShot(40, this, [this]() {
+        if (m_chatScrollArea && m_chatScrollArea->verticalScrollBar()) {
+            m_chatScrollArea->verticalScrollBar()->setValue(m_chatScrollArea->verticalScrollBar()->maximum());
+        }
+    });
 }
 
 void MainWindow::setMyProfile(const QString& name, const QString& ip, int port) {
@@ -529,38 +617,12 @@ void MainWindow::removePeer(const QString& peerKey) {
 }
 
 void MainWindow::appendChatMessage(const QString& sender, const QString& text, const QString& timeStr, bool isMine) {
-    QString bubbleHtml;
-    if (isMine) {
-        // Bong bóng tin nhắn bên phải (của mình) - Phong cách Messenger
-        bubbleHtml = QString(
-            "<div style='margin-bottom: 12px; text-align: right;'>"
-            "  <div style='display: inline-block; max-width: 68%; text-align: left; background-color: #5865F2; color: #FFFFFF; padding: 10px 16px; border-radius: 18px 18px 4px 18px; font-size: 13.5px; line-height: 1.42; word-wrap: break-word;'>"
-            "    %1"
-            "  </div>"
-            "  <div style='font-size: 10px; color: #949BA4; margin-top: 3px; margin-right: 6px;'>%2</div>"
-            "</div>"
-        ).arg(text.toHtmlEscaped()).arg(timeStr);
-    } else {
-        // Bong bóng tin nhắn bên trái (của bạn chat) - Phong cách Messenger
-        bubbleHtml = QString(
-            "<div style='margin-bottom: 12px; text-align: left;'>"
-            "  <div style='font-size: 11px; font-weight: bold; color: #949BA4; margin-bottom: 3px; margin-left: 8px;'>%1</div>"
-            "  <div style='display: inline-block; max-width: 68%; text-align: left; background-color: #383A40; color: #DBDEE1; padding: 10px 16px; border-radius: 18px 18px 18px 4px; font-size: 13.5px; line-height: 1.42; word-wrap: break-word;'>"
-            "    %2"
-            "  </div>"
-            "  <div style='font-size: 10px; color: #949BA4; margin-top: 3px; margin-left: 8px;'>%3</div>"
-            "</div>"
-        ).arg(sender.toHtmlEscaped()).arg(text.toHtmlEscaped()).arg(timeStr);
-    }
+    // Lưu vào lịch sử tin nhắn
+    m_chatHistories[m_currentPeerKey].push_back({sender, text, timeStr, isMine});
 
-    m_chatHtmlHistories[m_currentPeerKey] += bubbleHtml;
-    m_chatHistoryView->setHtml(m_chatHtmlHistories[m_currentPeerKey]);
-
-    // Cuộn mượt mà xuống dòng tin nhắn mới nhất
-    QScrollBar* bar = m_chatHistoryView->verticalScrollBar();
-    if (bar) {
-        bar->setValue(bar->maximum());
-    }
+    // Vẽ bong bóng tin nhắn lên giao diện
+    renderMessageBubble(sender, text, timeStr, isMine);
+    scrollToBottom();
 }
 
 void MainWindow::setFileProgress(int percent, const QString& statusText) {
@@ -638,8 +700,21 @@ void MainWindow::onPeerSelected(QListWidgetItem* item) {
     m_partnerStatusLabel->setText(QString("(%1) - IP: %2").arg(status.toUpper()).arg(m_currentPeerKey));
     m_messageInput->setPlaceholderText(QString("Message @%1... (Press Enter to send)").arg(m_currentPeerName));
 
-    // Nạp lại toàn bộ lịch sử chat của bạn này
-    m_chatHistoryView->setHtml(m_chatHtmlHistories[m_currentPeerKey]);
+    // Xóa sạch các bong bóng tin nhắn cũ trên màn hình (chừa lại stretch ở cuối)
+    while (m_messagesLayout->count() > 1) {
+        QLayoutItem* layoutItem = m_messagesLayout->takeAt(0);
+        if (layoutItem->widget()) {
+            delete layoutItem->widget();
+        }
+        delete layoutItem;
+    }
+
+    // Nạp lại toàn bộ lịch sử tin nhắn của bạn này
+    const auto& history = m_chatHistories[m_currentPeerKey];
+    for (const auto& msg : history) {
+        renderMessageBubble(msg.sender, msg.text, msg.timeStr, msg.isMine);
+    }
+    scrollToBottom();
 }
 
 void MainWindow::onStatusChanged(int index) {

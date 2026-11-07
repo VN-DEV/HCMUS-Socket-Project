@@ -2,7 +2,8 @@
 
 #include <QMainWindow>
 #include <QListWidget>
-#include <QTextBrowser>
+#include <QScrollArea>
+#include <QVBoxLayout>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QComboBox>
@@ -19,14 +20,21 @@
  * NGƯỜI PHỤ TRÁCH: Nguyễn Mạnh Trí
  * 
  * MÔ TẢ:
- * Cửa sổ giao diện đồ họa chính thiết kế theo phong cách Discord Dark Theme:
- * - Cột trái (Sidebar #2B2D31): Danh mục Direct Messages (Online Peers) và
- *   thanh User Profile mini cố định ở đáy (#232428).
- * - Cột phải (Chat Area #313338): Header kênh chat, danh sách tin nhắn phẳng
- *   (Discord Message Rows), khung tiến độ file dạng Embed, và thanh nhập liệu
- *   nổi (#383A40) kèm nút Blurple (#5865F2).
+ * Cửa sổ giao diện chính:
+ * - Cột Sidebar bên trái: Phong cách Discord Dark Theme (#2B2D31), bo góc 12px.
+ * - Khung trò chuyện bên phải: Bong bóng tin nhắn bo tròn dạng viên thuốc chuẩn
+ *   Messenger (Messenger Rounded Pill Bubbles):
+ *   + Tin gửi đi (phải): Nằm sát lề phải, bo tròn 18px dạng viên thuốc ôm sát chữ.
+ *   + Tin nhận về (trái): Nằm sát lề trái kèm avatar tròn, nền tối bo tròn 18px.
  * ============================================================================
  */
+
+struct UiChatMessage {
+    QString sender;
+    QString text;
+    QString timeStr;
+    bool isMine;
+};
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -44,7 +52,7 @@ public:
     // Xóa một peer khỏi danh sách khi bị timeout 10s
     void removePeer(const QString& peerKey);
 
-    // Thêm một tin nhắn vào khung chat theo định dạng Discord Message Row
+    // Thêm một tin nhắn vào khung chat theo dạng bong bóng Messenger
     void appendChatMessage(const QString& sender, const QString& text, const QString& timeStr, bool isMine);
 
     // Cập nhật tiến độ truyền nhận file (%)
@@ -61,8 +69,10 @@ private slots:
 
 private:
     void setupUi();
-    void applyDiscordStyleSheet();
+    void applyStyleSheet();
     void initMockData();
+    void renderMessageBubble(const QString& sender, const QString& text, const QString& timeStr, bool isMine);
+    void scrollToBottom();
 
     // Các thành phần cột trái (Sidebar Discord)
     QLabel* m_myAvatarLabel = nullptr;
@@ -71,10 +81,13 @@ private:
     QComboBox* m_statusCombo = nullptr;
     QListWidget* m_peerListWidget = nullptr;
 
-    // Các thành phần cột phải (Chat Area Discord)
+    // Các thành phần cột phải (Chat Area với bong bóng Messenger)
     QLabel* m_partnerHeaderLabel = nullptr;
     QLabel* m_partnerStatusLabel = nullptr;
-    QTextBrowser* m_chatHistoryView = nullptr;
+    QScrollArea* m_chatScrollArea = nullptr;
+    QWidget* m_scrollContent = nullptr;
+    QVBoxLayout* m_messagesLayout = nullptr;
+
     QProgressBar* m_fileProgressBar = nullptr;
     QLabel* m_fileProgressLabel = nullptr;
     QWidget* m_fileProgressContainer = nullptr;
@@ -88,6 +101,6 @@ private:
     QString m_myName = "Nguyen Manh Tri";
     int m_myTcpPort = 5000;
 
-    // Lưu trữ lịch sử tin nhắn dạng HTML cho từng bạn chat (Key: "IP:Port")
-    std::map<QString, QString> m_chatHtmlHistories;
+    // Lưu trữ lịch sử tin nhắn dạng danh sách cấu trúc cho từng bạn chat (Key: "IP:Port")
+    std::map<QString, std::vector<UiChatMessage>> m_chatHistories;
 };
