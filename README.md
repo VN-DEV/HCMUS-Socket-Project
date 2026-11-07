@@ -5,7 +5,7 @@ Developed for the CSC10008 Computer Networks course at VNU-HCM University of Sci
 
 ## Team Members
 
-1. Nguyen Manh Tri (Team Lead)
+1. Nguyen Manh Tri
 2. Do Duy Truong
 3. Mai Huu Tri
 
