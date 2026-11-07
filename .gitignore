@@ -1,0 +1,35 @@
+# Build output directories
+build/
+bin/
+out/
+
+# IDE and editor settings
+.vscode/
+.idea/
+*.user
+
+# Compilation databases and cache files
+compile_commands.json
+CMakeCache.txt
+CMakeFiles/
+*.ninja_deps
+*.ninja_log
+
+# Binary and object files
+*.exe
+*.dll
+*.so
+*.dylib
+*.obj
+*.o
+*.a
+*.lib
+
+# Runtime downloaded files (keep folder intact)
+downloads/*
+!downloads/.gitkeep
+
+# Temporary and log files
+*.log
+*.tmp
+InstallationLog.txt
