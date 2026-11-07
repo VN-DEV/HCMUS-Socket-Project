@@ -67,3 +67,4 @@ private:
     std::map<std::string, std::vector<ChatMessage>> m_chatHistories; // Key: "IP:Port"
     std::map<std::string, int> m_unreadCounts;                   // Key: "IP:Port"
 };
+

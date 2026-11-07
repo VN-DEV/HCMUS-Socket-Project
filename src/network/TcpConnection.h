@@ -10,20 +10,20 @@
 
 /*
  * ============================================================================
- * FILE: src/network/TcpConnection.h
- * NGUOI PHU TRACH: Do Duy Truong (Chat 1-1) & Mai Huu Tri (Truyen File)
+ * TẬP TIN: src/network/TcpConnection.h
+ * NGƯỜI PHỤ TRÁCH: Đỗ Duy Trường (Chat 1-1) & Mai Hữu Trí (Truyền File)
  * 
- * MO TA:
- * Class nay quan ly mot ket noi TCP truc tiep voi mot peer cu the:
- * - Gui/nhan tin nhan thoi gian thuc.
- * - Gui/nhan file khong nghen chat (Worker Thread rieng).
- * - Boc tach goi tin theo chuan framing (AUTH, MSG, FILE, BYE).
+ * MÔ TẢ:
+ * Class quản lý một kết nối TCP trực tiếp 1-1 với một bạn chat:
+ * - Gửi/nhận tin nhắn chat thời gian thực.
+ * - Gửi/nhận file nhị phân trên luồng riêng (không nghẽn chat).
+ * - Bóc tách gói tin theo đúng chuẩn framing (AUTH, MSG, FILE, BYE).
  * 
- * NGUYEN LY HOAT DONG (MUC 3.3, 3.4 & 5.2 TRONG DE BAI):
- * 1. receiverLoop (Luong nhan): Chay ngam doc lien tuc tu socket, nhan tin nhan va file.
- * 2. sendFileWorker (Luong gui file): Chay tren luong rieng, chia file thanh cac
- *    chunk 64KB truyen qua socket va bao tien trinh %.
- * 3. sendMutex: Khoa dong bo de dam bao goi tin nhan khong bi chen lan vao giua du lieu file.
+ * CƠ CHẾ HOẠT ĐỘNG (MỤC 3.3, 3.4 & 5.2 TRONG ĐỀ BÀI):
+ * 1. receiverLoop (Luồng nhận): Chạy ngầm liên tục đọc byte stream từ socket.
+ * 2. sendFileWorker (Luồng gửi file): Chạy trên luồng riêng, chia nhỏ file thành
+ *    các khối chunk 64KB để truyền và phát tín hiệu tiến trình %.
+ * 3. sendMutex: Khóa chống gửi chồng chéo dữ liệu giữa luồng chat và luồng file.
  * ============================================================================
  */
 
@@ -32,19 +32,19 @@ public:
     TcpConnection(SOCKET sock, const std::string& peerIp);
     ~TcpConnection();
 
-    // Khoi dong luong nhan du lieu (receiverLoop)
+    // Khởi động luồng nhận dữ liệu (receiverLoop)
     void start();
 
-    // Dong ket noi an toan
+    // Đóng kết nối an toàn
     void close();
 
-    // Gui goi tin bat tay dinh danh AUTH|<myName>|<myTcpPort>|
+    // Gửi gói tin bắt tay định danh AUTH|<myName>|<myTcpPort>|
     bool sendAuth(const std::string& myName, int myTcpPort);
 
-    // Gui tin nhan chat MSG|<length>|<text>
+    // Gửi tin nhắn chat MSG|<length>|<text>
     bool sendMsg(const std::string& text);
 
-    // Gui file khong lam nghen chat (chay tren luong rieng)
+    // Gửi file không làm nghẽn chat (chạy trên luồng riêng)
     void sendFileAsync(const std::string& filePath,
                        std::function<void(int percent)> onProgress,
                        std::function<void(bool success, const std::string& err)> onFinished);
@@ -55,7 +55,7 @@ public:
     std::string getPeerName() const { return m_peerName; }
     std::string getPeerKey() const { return m_peerIp + ":" + std::to_string(m_peerPort); }
 
-    // Callbacks bao len cho ChatManager / UI
+    // Callbacks thông báo sự kiện lên ChatManager / UI
     std::function<void(const std::string& name, int port)> onAuthenticated;
     std::function<void(const std::string& text)> onMessageReceived;
     std::function<void(const std::string& fileName, int percent)> onFileRecvProgress;
@@ -63,10 +63,10 @@ public:
     std::function<void()> onDisconnected;
 
 private:
-    // Luong nhan du lieu (TCP Receiver Thread)
+    // Luồng nhận dữ liệu (TCP Receiver Thread)
     void receiverLoop();
 
-    // Luong worker gui file
+    // Luồng worker truyền file
     void sendFileWorker(std::string filePath,
                         std::function<void(int percent)> onProgress,
                         std::function<void(bool success, const std::string& err)> onFinished);
@@ -78,5 +78,5 @@ private:
     std::atomic<bool> m_connected{false};
 
     std::thread m_recvThread;
-    std::mutex m_sendMutex; // Khoa bao ve send() tranh xung dot giua tin nhan va file
+    std::mutex m_sendMutex; // Khóa bảo vệ hàm send() tránh xung đột dữ liệu
 };

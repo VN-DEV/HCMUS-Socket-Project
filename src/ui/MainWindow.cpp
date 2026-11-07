@@ -91,3 +91,4 @@ void MainWindow::onPeerSelected(QListWidgetItem* item) {
 void MainWindow::onStatusChanged(int index) {
     // TODO: Nguyen Manh Tri se hien thuc doi trang thai online/away tai day
 }
+

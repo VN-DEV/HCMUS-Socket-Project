@@ -91,3 +91,4 @@ void TcpConnection::sendFileWorker(std::string filePath,
 void TcpConnection::receiverLoop() {
     // TODO: Do Duy Truong & Mai Huu Tri se hien thuc luong nhan MSG va FILE tai day
 }
+

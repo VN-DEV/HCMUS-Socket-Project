@@ -12,20 +12,20 @@
 
 /*
  * ============================================================================
- * FILE: src/network/UdpDiscovery.h
- * NGUOI PHU TRACH: Nguyen Manh Tri
+ * TẬP TIN: src/network/UdpDiscovery.h
+ * NGƯỜI PHỤ TRÁCH: Nguyễn Mạnh Trí
  * 
- * MO TA:
- * Class nay dam nhiem toan bo tinh nang Peer Discovery (Tu dong phat hien ban be)
- * va Online Status trong mang cuc bo (LAN) bang UDP Broadcast.
+ * MÔ TẢ:
+ * Class đảm nhận tính năng Peer Discovery (tự động phát hiện bạn bè trong mạng LAN)
+ * và quản lý trạng thái Online Status bằng UDP Broadcast.
  * 
- * NGUYEN LY HOAT DONG (MUC 3.1 & 3.2 TRONG DE BAI):
- * 1. Luong broadcast (broadcastLoop): Dinh ky 3s mot lan, gui goi tin
- *    HELLO|<name>|<tcpPort>|<status> toi cong 9999 (255.255.255.255).
- * 2. Luong lang nghe (listenLoop): Mo socket UDP bind cong 9999 voi co SO_REUSEADDR,
- *    nhan goi tin tu cac may khac va cap nhat danh sach online peers.
- * 3. Luong kiem tra timeout (timeoutLoop): Cứ 1s kiem tra mot lan, peer nao qua
- *    10 giay khong co tin hieu broadcast se bi xoa khoi danh sach.
+ * CƠ CHẾ HOẠT ĐỘNG (MỤC 3.1 & 3.2 TRONG ĐỀ BÀI):
+ * 1. Luồng phát (broadcastLoop): Định kỳ 3 giây gửi gói tin
+ *    HELLO|<name>|<tcpPort>|<status> tới địa chỉ broadcast 255.255.255.255 qua cổng 9999.
+ * 2. Luồng nghe (listenLoop): Mở socket UDP bind cổng 9999 (bật SO_REUSEADDR),
+ *    nhận gói tin từ các peer khác và cập nhật danh sách online peers.
+ * 3. Luồng kiểm tra timeout (timeoutLoop): Định kỳ 1 giây kiểm tra danh bạ, peer nào
+ *    quá 10 giây không có tín hiệu broadcast sẽ tự động bị xóa khỏi danh sách.
  * ============================================================================
  */
 
@@ -34,41 +34,41 @@ public:
     UdpDiscovery();
     ~UdpDiscovery();
 
-    // Khoi dong tien trinh discovery: tao socket, bind cong udpPort (mac dinh 9999) va bat 3 luong
+    // Khởi động tiến trình discovery: tạo socket, bind cổng udpPort (mặc định 9999) và bật 3 luồng
     bool start(const std::string& myName, int myTcpPort, const std::string& status = "online", int udpPort = 9999);
 
-    // Dung toan bo tien trinh: dong cac socket va join cac luong
+    // Dừng toàn bộ tiến trình: đóng các socket và kết thúc (join) các luồng an toàn
     void stop();
 
-    // Cap nhat trang thai cua ban than ("online" hoac "away")
+    // Cập nhật trạng thái bản thân ("online" hoặc "away")
     void setStatus(const std::string& newStatus);
 
-    // Lay danh sach cac ban be dang online (an toan da luong voi mutex)
+    // Lấy danh sách các bạn bè đang online (được bảo vệ an toàn đa luồng bằng mutex)
     std::vector<Peer> getOnlinePeers();
 
 private:
-    // Cac ham chay tren luong rieng (Worker Threads)
-    void broadcastLoop(); // Luong phat goi tin moi 3s
-    void listenLoop();    // Luong nhan goi tin UDP
-    void timeoutLoop();   // Luong kiem tra va xoa peer qua 10s timeout
+    // Các hàm vòng lặp chạy trên luồng riêng (Worker Threads)
+    void broadcastLoop(); // Luồng gửi broadcast mỗi 3s
+    void listenLoop();    // Luồng lắng nghe gói UDP
+    void timeoutLoop();   // Luồng kiểm tra timeout 10s
 
-    // Thong tin cua may minh
+    // Thông tin của bản thân
     std::string m_myName;
     int m_myTcpPort = 0;
     std::string m_myStatus = "online";
     int m_udpPort = 9999;
 
-    // Sockets va co trang thai
+    // Sockets và cờ trạng thái
     SOCKET m_sendSocket = INVALID_SOCKET;
     SOCKET m_recvSocket = INVALID_SOCKET;
     std::atomic<bool> m_running{false};
 
-    // Cac luong chay song song
+    // Các luồng chạy song song
     std::thread m_broadcastThread;
     std::thread m_listenThread;
     std::thread m_timeoutThread;
 
-    // Danh sach ban be va khoa bao ve da luong
-    std::map<std::string, Peer> m_peers; // key la "IP:Port"
+    // Danh sách lưu trữ bạn bè và khóa bảo vệ luồng (mutex)
+    std::map<std::string, Peer> m_peers; // Khóa là chuỗi "IP:Port"
     std::mutex m_peersMutex;
 };

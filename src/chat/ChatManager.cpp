@@ -92,3 +92,4 @@ int ChatManager::getUnreadCount(const std::string& peerKey) {
     }
     return 0;
 }
+

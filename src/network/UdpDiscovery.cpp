@@ -4,41 +4,42 @@
 
 /*
  * ============================================================================
- * FILE: src/network/UdpDiscovery.cpp
- * NGUOI PHU TRACH: Nguyen Manh Tri
+ * TẬP TIN: src/network/UdpDiscovery.cpp
+ * NGƯỜI PHỤ TRÁCH: Nguyễn Mạnh Trí
  * 
- * HUONG DAN HIEN THUC CHI TIET CHO CAC HAM:
+ * HƯỚNG DẪN HIỆN THỰC CHI TIẾT:
  * 
- * 1. Ham start():
- *    - Tao sendSocket bang socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP).
- *    - Bat co SO_BROADCAST bang setsockopt.
- *    - Tao recvSocket, bat co SO_REUSEADDR, bind vao cong udpPort (9999) voi INADDR_ANY.
- *    - Bat co running = true va tao 3 thread: broadcastThread, listenThread, timeoutThread.
+ * 1. Hàm start():
+ *    - Tạo sendSocket: socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP).
+ *    - Bật cờ SO_BROADCAST bằng setsockopt.
+ *    - Tạo recvSocket, bật cờ SO_REUSEADDR bằng setsockopt.
+ *    - Bind recvSocket vào cổng udpPort (9999) với địa chỉ INADDR_ANY.
+ *    - Đặt m_running = true và khởi chạy 3 luồng: broadcastThread, listenThread, timeoutThread.
  * 
- * 2. Ham stop():
- *    - Dat running = false.
- *    - closesocket cho ca 2 socket.
- *    - join() cac thread neu joinable.
- *    - Xoa map m_peers (nho dung lock_guard<mutex>).
+ * 2. Hàm stop():
+ *    - Đặt m_running = false.
+ *    - Đóng sendSocket và recvSocket bằng closesocket().
+ *    - Chờ (join) cả 3 luồng kết thúc nếu joinable.
+ *    - Dùng lock_guard<mutex> để xóa sạch map m_peers.
  * 
- * 3. Ham broadcastLoop():
- *    - Vong lap while(running):
- *      + Tao chuoi packet bang Protocol::buildUdpHello(m_myName, m_myTcpPort, m_myStatus).
- *      + Gui den 255.255.255.255 va 127.255.255.255 bang sendto().
- *      + Ngu 3 giay: std::this_thread::sleep_for(std::chrono::seconds(3)).
+ * 3. Hàm broadcastLoop():
+ *    - Vòng lặp while(m_running):
+ *      + Tạo gói tin bằng Protocol::buildUdpHello(m_myName, m_myTcpPort, m_myStatus).
+ *      + Gửi qua sendto() tới "255.255.255.255" và "127.255.255.255".
+ *      + Ngủ 3 giây: std::this_thread::sleep_for(std::chrono::seconds(3)).
  * 
- * 4. Ham listenLoop():
- *    - Vong lap while(running):
- *      + Dung recvfrom() doc goi tin tu recvSocket.
- *      + Dung Protocol::parseUdpHello() boc tach thong tin.
- *      + Lay IP nguoi gui qua inet_ntop().
- *      + Bo qua neu goi tin do chinh may minh gui ra (trung IP va trung port).
- *      + Dung lock_guard<mutex> cap nhat peer vao map m_peers voi lastSeen = now().
+ * 4. Hàm listenLoop():
+ *    - Vòng lặp while(m_running):
+ *      + Nhận gói qua recvfrom().
+ *      + Bóc tách bằng Protocol::parseUdpHello().
+ *      + Lấy địa chỉ IP người gửi bằng inet_ntop().
+ *      + Bỏ qua nếu là chính máy mình phát ra (trùng port và trùng IP).
+ *      + Dùng lock_guard<mutex> để thêm hoặc cập nhật peer vào m_peers với lastSeen = now().
  * 
- * 5. Ham timeoutLoop():
- *    - Vong lap while(running):
- *      + Ngu 1 giay.
- *      + Dung lock_guard<mutex> duyet qua m_peers, xoa cac peer co (now - lastSeen > 10 giay).
+ * 5. Hàm timeoutLoop():
+ *    - Vòng lặp while(m_running):
+ *      + Ngủ 1 giây.
+ *      + Dùng lock_guard<mutex> duyệt m_peers, xóa các peer có (now - lastSeen > 10s).
  * ============================================================================
  */
 
@@ -67,14 +68,14 @@ bool UdpDiscovery::start(const std::string& myName, int myTcpPort, const std::st
     m_myStatus = status;
     m_udpPort = udpPort;
 
-    // TODO: Nguyen Manh Tri se hien thuc khoi tao socket va khoi chay 3 luong tai day
+    // TODO: Nguyễn Mạnh Trí sẽ hiện thực khởi tạo socket và bật 3 luồng tại đây
     return true;
 }
 
 void UdpDiscovery::stop() {
     m_running = false;
 
-    // TODO: Nguyen Manh Tri se hien thuc dong socket va join cac luong tai day
+    // TODO: Nguyễn Mạnh Trí sẽ hiện thực đóng socket và join các luồng tại đây
     if (m_sendSocket != INVALID_SOCKET) {
         closesocket(m_sendSocket);
         m_sendSocket = INVALID_SOCKET;
@@ -93,13 +94,13 @@ void UdpDiscovery::stop() {
 }
 
 void UdpDiscovery::broadcastLoop() {
-    // TODO: Nguyen Manh Tri se hien thuc vong lap broadcast moi 3 giay tai day
+    // TODO: Nguyễn Mạnh Trí sẽ hiện thực vòng lặp broadcast gửi HELLO mỗi 3 giây tại đây
 }
 
 void UdpDiscovery::listenLoop() {
-    // TODO: Nguyen Manh Tri se hien thuc vong lap recvfrom lang nghe tai day
+    // TODO: Nguyễn Mạnh Trí sẽ hiện thực vòng lặp recvfrom nhận HELLO và cập nhật danh bạ tại đây
 }
 
 void UdpDiscovery::timeoutLoop() {
-    // TODO: Nguyen Manh Tri se hien thuc vong lap kiem tra timeout 10s tai day
+    // TODO: Nguyễn Mạnh Trí sẽ hiện thực vòng lặp kiểm tra timeout 10 giây xóa peer tại đây
 }

@@ -3,28 +3,28 @@
 
 /*
  * ============================================================================
- * FILE: src/network/TcpServer.cpp
- * NGUOI PHU TRACH: Do Duy Truong
+ * TẬP TIN: src/network/TcpServer.cpp
+ * NGƯỜI PHỤ TRÁCH: Đỗ Duy Trường
  * 
- * HUONG DAN HIEN THUC:
+ * HƯỚNG DẪN HIỆN THỰC CHI TIẾT:
  * 
- * 1. Ham start(preferredPort):
- *    - Tao socket TCP: m_serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP).
- *    - Bat co SO_REUSEADDR bang setsockopt.
- *    - Vong lap thu bind tu preferredPort den preferredPort + 50 (phong truong hop chay nhieu instance tren 1 PC).
- *    - Goi listen(m_serverSock, SOMAXCONN).
- *    - Bat co m_running = true va khoi chay m_acceptThread = std::thread(&TcpServer::acceptLoop, this).
+ * 1. Hàm start(preferredPort):
+ *    - Tạo socket TCP: m_serverSock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP).
+ *    - Bật cờ SO_REUSEADDR bằng setsockopt().
+ *    - Vòng lặp thử bind từ preferredPort đến preferredPort + 50 (hỗ trợ test nhiều instance).
+ *    - Gọi listen(m_serverSock, SOMAXCONN).
+ *    - Đặt m_running = true và bật luồng: m_acceptThread = std::thread(&TcpServer::acceptLoop, this).
  * 
- * 2. Ham stop():
- *    - Dat m_running = false.
+ * 2. Hàm stop():
+ *    - Đặt m_running = false.
  *    - closesocket(m_serverSock).
- *    - join() luong m_acceptThread neu joinable.
+ *    - Chờ luồng kết thúc (join) nếu joinable.
  * 
- * 3. Ham acceptLoop():
- *    - Vong lap while(m_running):
- *      + Goi accept(m_serverSock, (sockaddr*)&clientAddr, &addrLen).
- *      + Lay IP client qua inet_ntop.
- *      + Neu onNewConnection != nullptr, goi callback onNewConnection(clientSock, clientIp).
+ * 3. Hàm acceptLoop():
+ *    - Vòng lặp while(m_running):
+ *      + Gọi accept(m_serverSock, (sockaddr*)&clientAddr, &addrLen).
+ *      + Lấy địa chỉ IP client bằng inet_ntop().
+ *      + Nếu onNewConnection != nullptr, gọi onNewConnection(clientSock, clientIp).
  * ============================================================================
  */
 
@@ -37,14 +37,14 @@ TcpServer::~TcpServer() {
 bool TcpServer::start(int preferredPort) {
     m_listeningPort = preferredPort;
 
-    // TODO: Do Duy Truong se hien thuc tao socket, bind, listen va acceptThread tai day
+    // TODO: Đỗ Duy Trường sẽ hiện thực tạo socket, bind, listen và acceptThread tại đây
     return true;
 }
 
 void TcpServer::stop() {
     m_running = false;
 
-    // TODO: Do Duy Truong se hien thuc dong m_serverSock va join acceptThread tai day
+    // TODO: Đỗ Duy Trường sẽ hiện thực đóng socket và join acceptThread tại đây
     if (m_serverSock != INVALID_SOCKET) {
         closesocket(m_serverSock);
         m_serverSock = INVALID_SOCKET;
@@ -55,5 +55,5 @@ void TcpServer::stop() {
 }
 
 void TcpServer::acceptLoop() {
-    // TODO: Do Duy Truong se hien thuc vong lap accept() tai day
+    // TODO: Đỗ Duy Trường sẽ hiện thực vòng lặp accept() đón kết nối mới tại đây
 }

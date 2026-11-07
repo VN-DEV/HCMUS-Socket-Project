@@ -49,3 +49,4 @@ private:
     QProgressBar* m_fileProgressBar = nullptr;
     QLabel* m_fileProgressLabel = nullptr;
 };
+

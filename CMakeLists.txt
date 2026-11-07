@@ -28,3 +28,4 @@ target_link_libraries(lan_chat PRIVATE
 if(WIN32)
     target_link_libraries(lan_chat PRIVATE ws2_32)
 endif()
+

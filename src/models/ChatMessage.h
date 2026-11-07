@@ -5,17 +5,17 @@
 
 /*
  * ============================================================================
- * FILE: src/models/ChatMessage.h
- * NGUOI PHU TRACH: Mai Huu Tri / Nguyen Manh Tri
+ * TẬP TIN: src/models/ChatMessage.h
+ * NGƯỜI PHỤ TRÁCH: Mai Hữu Trí & Nguyễn Mạnh Trí
  * 
- * MO TA:
- * File nay dinh nghia cau truc mot dong tin nhan chat duoc truyen nhan qua mang.
+ * MÔ TẢ:
+ * Cấu trúc dữ liệu đại diện cho một tin nhắn trao đổi giữa các peer.
  * 
- * CAC TRUONG DU LIEU CAN QUAN LY:
- * 1. sender: Ten nguoi gui tin nhan.
- * 2. text: Noi dung tin nhan van ban.
- * 3. timestamp: Thoi diem gui tin nhan.
- * 4. isMine: true neu tin nhan do chinh minh gui, false neu nhan tu ban chat.
+ * CÁC TRƯỜNG DỮ LIỆU:
+ * 1. sender: Tên người gửi tin nhắn.
+ * 2. text: Nội dung tin nhắn văn bản.
+ * 3. timestamp: Thời điểm gửi tin nhắn.
+ * 4. isMine: Đánh dấu tin nhắn do chính mình gửi (true) hay nhận từ bạn chat (false).
  * ============================================================================
  */
 
