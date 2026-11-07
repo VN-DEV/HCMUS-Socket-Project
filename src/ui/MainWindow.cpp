@@ -94,15 +94,8 @@ void MainWindow::setupUi() {
     userTextLayout->addWidget(m_myProfileLabel);
     userTextLayout->addWidget(m_myEndpointLabel);
 
-    // Dropdown trạng thái bo góc 6px
-    m_statusCombo = new QComboBox(userFooter);
-    m_statusCombo->setObjectName("discordStatusCombo");
-    m_statusCombo->addItem("Online");
-    m_statusCombo->addItem("Away");
-
     userFooterLayout->addWidget(m_myAvatarLabel);
     userFooterLayout->addLayout(userTextLayout, 1);
-    userFooterLayout->addWidget(m_statusCombo);
 
     leftLayout->addWidget(userFooter);
 
@@ -215,7 +208,6 @@ void MainWindow::setupUi() {
     connect(m_messageInput, &QLineEdit::returnPressed, this, &MainWindow::onSendMessageClicked);
     connect(m_sendFileBtn, &QPushButton::clicked, this, &MainWindow::onSendFileClicked);
     connect(m_peerListWidget, &QListWidget::itemClicked, this, &MainWindow::onPeerSelected);
-    connect(m_statusCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onStatusChanged);
 }
 
 void MainWindow::applyStyleSheet() {
@@ -300,16 +292,6 @@ void MainWindow::applyStyleSheet() {
             font-size: 11px;
             color: #949BA4;
             background: transparent;
-        }
-
-        #discordStatusCombo {
-            background-color: #1E1F22;
-            color: #23A55A;
-            border: 1px solid #2B2D31;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 11.5px;
-            font-weight: bold;
         }
 
         /* 3. Khung Chat Area (#313338) */
@@ -572,10 +554,8 @@ void MainWindow::setMyProfile(const QString& name, const QString& ip, int port) 
 
 void MainWindow::addOrUpdatePeer(const QString& name, const QString& ip, int port, const QString& status, int unreadCount) {
     QString key = ip + ":" + QString::number(port);
-    QString statusDot = (status.toLower() == "online") ? "[ONLINE]" : "[AWAY]";
-    QString displayText = QString("@ %1  %2  (%3:%4)")
+    QString displayText = QString("@ %1  (%2:%3)")
                               .arg(name)
-                              .arg(statusDot)
                               .arg(ip)
                               .arg(port);
 
@@ -690,7 +670,7 @@ void MainWindow::onPeerSelected(QListWidgetItem* item) {
     QString status = item->data(Qt::UserRole + 2).toString();
 
     m_partnerHeaderLabel->setText("@ " + m_currentPeerName);
-    m_partnerStatusLabel->setText(QString("(%1) - IP: %2").arg(status.toUpper()).arg(m_currentPeerKey));
+    m_partnerStatusLabel->setText(QString("IP: %1").arg(m_currentPeerKey));
     m_messageInput->setPlaceholderText(QString("Message @%1... (Press Enter to send)").arg(m_currentPeerName));
 
     // Xóa sạch các bong bóng tin nhắn cũ trên màn hình (chừa lại stretch ở cuối)
@@ -708,14 +688,4 @@ void MainWindow::onPeerSelected(QListWidgetItem* item) {
         renderMessageBubble(msg.sender, msg.text, msg.timeStr, msg.isMine);
     }
     scrollToBottom();
-}
-
-void MainWindow::onStatusChanged(int index) {
-    if (m_statusCombo) {
-        if (index == 0) {
-            m_statusCombo->setStyleSheet("color: #23A55A;"); // Xanh lá Discord
-        } else {
-            m_statusCombo->setStyleSheet("color: #F0B232;"); // Vàng cam Discord
-        }
-    }
 }

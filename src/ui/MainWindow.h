@@ -65,7 +65,6 @@ private slots:
     void onSendMessageClicked();
     void onSendFileClicked();
     void onPeerSelected(QListWidgetItem* item);
-    void onStatusChanged(int index);
 
 private:
     void setupUi();
@@ -78,7 +77,6 @@ private:
     QLabel* m_myAvatarLabel = nullptr;
     QLabel* m_myProfileLabel = nullptr;
     QLabel* m_myEndpointLabel = nullptr;
-    QComboBox* m_statusCombo = nullptr;
     QListWidget* m_peerListWidget = nullptr;
 
     // Các thành phần cột phải (Chat Area với bong bóng Messenger)
