@@ -14,21 +14,22 @@
  * NGƯỜI PHỤ TRÁCH: Nguyễn Mạnh Trí
  * 
  * MÔ TẢ:
- * Hiện thực giao diện đồ họa chính với Qt6 Widgets:
- * - Bố cục chia 2 cột bằng QSplitter.
- * - Khung hiển thị tin nhắn định dạng bong bóng HTML/CSS.
- * - Tương tác thời gian thực: chọn bạn chat, gửi tin nhắn, chọn và gửi file.
+ * Hiện thực giao diện đồ họa chuẩn phong cách Discord Dark Theme:
+ * - Bảng màu đặc trưng: #313338 (Chat Area), #2B2D31 (Sidebar), #232428 (User Bar),
+ *   #5865F2 (Discord Blurple), #23A55A (Online Green), #F0B232 (Away Yellow).
+ * - Thanh User Profile mini đặt cố định ở đáy cột bên trái.
+ * - Khung tin nhắn định dạng Discord Message Rows (Username + Timestamp + Body).
  * ============================================================================
  */
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent) {
     setWindowTitle("HCMUS LAN Chat & File Sharing (CSC10008)");
-    resize(1000, 680);
-    setMinimumSize(800, 500);
+    resize(1050, 700);
+    setMinimumSize(850, 550);
 
     setupUi();
-    applyStyleSheet();
+    applyDiscordStyleSheet();
     initMockData();
 }
 
@@ -46,127 +47,154 @@ void MainWindow::setupUi() {
     mainSplitter->setHandleWidth(1);
 
     // ========================================================================
-    // 1. CỘT TRÁI (SIDEBAR)
+    // 1. CỘT TRÁI (DISCORD SIDEBAR #2B2D31)
     // ========================================================================
     QWidget* leftPanel = new QWidget(this);
-    leftPanel->setObjectName("leftPanel");
+    leftPanel->setObjectName("discordSidebar");
     QVBoxLayout* leftLayout = new QVBoxLayout(leftPanel);
-    leftLayout->setContentsMargins(16, 16, 16, 16);
-    leftLayout->setSpacing(12);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
+    leftLayout->setSpacing(0);
 
-    // Khung hồ sơ người dùng hiện tại
-    QWidget* profileBox = new QWidget(this);
-    profileBox->setObjectName("profileBox");
-    QVBoxLayout* profileLayout = new QVBoxLayout(profileBox);
-    profileLayout->setContentsMargins(12, 12, 12, 12);
-    profileLayout->setSpacing(4);
+    // Tiêu đề danh mục Direct Messages
+    QLabel* dmHeader = new QLabel("DIRECT MESSAGES", leftPanel);
+    dmHeader->setObjectName("discordDmHeader");
+    leftLayout->addWidget(dmHeader);
 
-    m_myProfileLabel = new QLabel(m_myName, profileBox);
-    m_myProfileLabel->setObjectName("myProfileName");
+    // Danh sách các peer online
+    m_peerListWidget = new QListWidget(leftPanel);
+    m_peerListWidget->setObjectName("discordPeerList");
+    leftLayout->addWidget(m_peerListWidget, 1);
 
-    m_myEndpointLabel = new QLabel("IP: 127.0.0.1 | Port: " + QString::number(m_myTcpPort), profileBox);
-    m_myEndpointLabel->setObjectName("myProfileEndpoint");
+    // Thanh User Profile mini ở đáy cột trái (đặc trưng của Discord #232428)
+    QWidget* userFooter = new QWidget(leftPanel);
+    userFooter->setObjectName("discordUserFooter");
+    QHBoxLayout* userFooterLayout = new QHBoxLayout(userFooter);
+    userFooterLayout->setContentsMargins(10, 8, 10, 8);
+    userFooterLayout->setSpacing(10);
 
-    QHBoxLayout* statusRow = new QHBoxLayout();
-    QLabel* statusPrompt = new QLabel("Status:", profileBox);
-    m_statusCombo = new QComboBox(profileBox);
+    // Avatar tròn viết tắt 2 chữ cái đầu
+    m_myAvatarLabel = new QLabel("NT", userFooter);
+    m_myAvatarLabel->setObjectName("discordAvatarBadge");
+    m_myAvatarLabel->setFixedSize(34, 34);
+    m_myAvatarLabel->setAlignment(Qt::AlignCenter);
+
+    // Tên và thông số mạng
+    QVBoxLayout* userTextLayout = new QVBoxLayout();
+    userTextLayout->setSpacing(1);
+    m_myProfileLabel = new QLabel(m_myName, userFooter);
+    m_myProfileLabel->setObjectName("discordUserName");
+
+    m_myEndpointLabel = new QLabel("Port: " + QString::number(m_myTcpPort), userFooter);
+    m_myEndpointLabel->setObjectName("discordUserSubtext");
+    userTextLayout->addWidget(m_myProfileLabel);
+    userTextLayout->addWidget(m_myEndpointLabel);
+
+    // Dropdown trạng thái
+    m_statusCombo = new QComboBox(userFooter);
+    m_statusCombo->setObjectName("discordStatusCombo");
     m_statusCombo->addItem("Online");
     m_statusCombo->addItem("Away");
-    statusRow->addWidget(statusPrompt);
-    statusRow->addWidget(m_statusCombo);
 
-    profileLayout->addWidget(m_myProfileLabel);
-    profileLayout->addWidget(m_myEndpointLabel);
-    profileLayout->addLayout(statusRow);
-    leftLayout->addWidget(profileBox);
+    userFooterLayout->addWidget(m_myAvatarLabel);
+    userFooterLayout->addLayout(userTextLayout, 1);
+    userFooterLayout->addWidget(m_statusCombo);
 
-    // Tiêu đề danh sách bạn bè
-    QLabel* peersHeader = new QLabel("ONLINE PEERS", leftPanel);
-    peersHeader->setObjectName("peersHeader");
-    leftLayout->addWidget(peersHeader);
-
-    // Danh sách các peer đang hoạt động
-    m_peerListWidget = new QListWidget(leftPanel);
-    m_peerListWidget->setObjectName("peerListWidget");
-    leftLayout->addWidget(m_peerListWidget);
+    leftLayout->addWidget(userFooter);
 
     mainSplitter->addWidget(leftPanel);
 
     // ========================================================================
-    // 2. CỘT PHẢI (CHAT & FILE TRANSFER AREA)
+    // 2. CỘT PHẢI (DISCORD CHAT AREA #313338)
     // ========================================================================
     QWidget* rightPanel = new QWidget(this);
-    rightPanel->setObjectName("rightPanel");
+    rightPanel->setObjectName("discordChatArea");
     QVBoxLayout* rightLayout = new QVBoxLayout(rightPanel);
-    rightLayout->setContentsMargins(20, 16, 20, 16);
-    rightLayout->setSpacing(10);
+    rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setSpacing(0);
 
-    // Thanh Header hiển thị bạn chat hiện tại
+    // Thanh Header kênh chat ở đỉnh
     QWidget* chatHeaderWidget = new QWidget(rightPanel);
-    chatHeaderWidget->setObjectName("chatHeaderWidget");
+    chatHeaderWidget->setObjectName("discordChatHeader");
+    chatHeaderWidget->setFixedHeight(50);
     QHBoxLayout* headerLayout = new QHBoxLayout(chatHeaderWidget);
-    headerLayout->setContentsMargins(12, 8, 12, 8);
+    headerLayout->setContentsMargins(16, 0, 16, 0);
 
-    m_partnerHeaderLabel = new QLabel("Select a peer to start chatting", chatHeaderWidget);
-    m_partnerHeaderLabel->setObjectName("partnerHeaderLabel");
+    m_partnerHeaderLabel = new QLabel("@ Select a friend to start messaging", chatHeaderWidget);
+    m_partnerHeaderLabel->setObjectName("discordChannelTitle");
 
     m_partnerStatusLabel = new QLabel("", chatHeaderWidget);
-    m_partnerStatusLabel->setObjectName("partnerStatusLabel");
+    m_partnerStatusLabel->setObjectName("discordChannelSubtext");
 
     headerLayout->addWidget(m_partnerHeaderLabel);
-    headerLayout->addStretch();
+    headerLayout->addSpacing(12);
     headerLayout->addWidget(m_partnerStatusLabel);
+    headerLayout->addStretch();
     rightLayout->addWidget(chatHeaderWidget);
 
-    // Khung hiển thị lịch sử trò chuyện (Chat Bubbles)
+    // Khung lịch sử tin nhắn phong cách Discord
     m_chatHistoryView = new QTextBrowser(rightPanel);
-    m_chatHistoryView->setObjectName("chatHistoryView");
+    m_chatHistoryView->setObjectName("discordMessageFeed");
     m_chatHistoryView->setOpenExternalLinks(true);
     rightLayout->addWidget(m_chatHistoryView, 1);
 
-    // Khung tiến độ truyền nhận tệp tin (mặc định ẩn)
+    // Khung tiến độ truyền file (Embed card #2B2D31, viền Blurple)
     m_fileProgressContainer = new QWidget(rightPanel);
-    m_fileProgressContainer->setObjectName("fileProgressContainer");
+    m_fileProgressContainer->setObjectName("discordFileEmbed");
     QVBoxLayout* progressLayout = new QVBoxLayout(m_fileProgressContainer);
-    progressLayout->setContentsMargins(12, 8, 12, 8);
-    progressLayout->setSpacing(4);
+    progressLayout->setContentsMargins(16, 10, 16, 10);
+    progressLayout->setSpacing(6);
 
-    m_fileProgressLabel = new QLabel("Transferring file...", m_fileProgressContainer);
+    m_fileProgressLabel = new QLabel("Uploading file...", m_fileProgressContainer);
+    m_fileProgressLabel->setObjectName("discordEmbedTitle");
+
     m_fileProgressBar = new QProgressBar(m_fileProgressContainer);
+    m_fileProgressBar->setObjectName("discordProgressBar");
     m_fileProgressBar->setRange(0, 100);
     m_fileProgressBar->setValue(0);
     m_fileProgressBar->setTextVisible(true);
 
     progressLayout->addWidget(m_fileProgressLabel);
     progressLayout->addWidget(m_fileProgressBar);
-    m_fileProgressContainer->setVisible(false); // Ẩn khi chưa truyền file
+    m_fileProgressContainer->setVisible(false);
     rightLayout->addWidget(m_fileProgressContainer);
 
-    // Thanh nhập liệu phía dưới
-    QHBoxLayout* inputBarLayout = new QHBoxLayout();
-    inputBarLayout->setSpacing(8);
+    // Thanh nhập liệu nổi bo tròn (#383A40)
+    QWidget* inputContainer = new QWidget(rightPanel);
+    inputContainer->setObjectName("discordInputContainer");
+    QVBoxLayout* inputContainerLayout = new QVBoxLayout(inputContainer);
+    inputContainerLayout->setContentsMargins(16, 0, 16, 16);
 
-    m_sendFileBtn = new QPushButton("Send File", rightPanel);
-    m_sendFileBtn->setObjectName("sendFileBtn");
+    QWidget* inputPill = new QWidget(inputContainer);
+    inputPill->setObjectName("discordInputPill");
+    QHBoxLayout* pillLayout = new QHBoxLayout(inputPill);
+    pillLayout->setContentsMargins(6, 6, 8, 6);
+    pillLayout->setSpacing(8);
 
-    m_messageInput = new QLineEdit(rightPanel);
-    m_messageInput->setObjectName("messageInput");
-    m_messageInput->setPlaceholderText("Type a message... (Press Enter to send)");
+    m_sendFileBtn = new QPushButton("+ File", inputPill);
+    m_sendFileBtn->setObjectName("discordAttachBtn");
+    m_sendFileBtn->setCursor(Qt::PointingHandCursor);
 
-    m_sendBtn = new QPushButton("Send", rightPanel);
-    m_sendBtn->setObjectName("sendBtn");
+    m_messageInput = new QLineEdit(inputPill);
+    m_messageInput->setObjectName("discordMessageInput");
+    m_messageInput->setPlaceholderText("Message @peer... (Press Enter to send)");
 
-    inputBarLayout->addWidget(m_sendFileBtn);
-    inputBarLayout->addWidget(m_messageInput, 1);
-    inputBarLayout->addWidget(m_sendBtn);
-    rightLayout->addLayout(inputBarLayout);
+    m_sendBtn = new QPushButton("Send", inputPill);
+    m_sendBtn->setObjectName("discordSendBtn");
+    m_sendBtn->setCursor(Qt::PointingHandCursor);
+
+    pillLayout->addWidget(m_sendFileBtn);
+    pillLayout->addWidget(m_messageInput, 1);
+    pillLayout->addWidget(m_sendBtn);
+
+    inputContainerLayout->addWidget(inputPill);
+    rightLayout->addWidget(inputContainer);
 
     mainSplitter->addWidget(rightPanel);
-    mainSplitter->setSizes({280, 720});
+    mainSplitter->setSizes({260, 790});
 
     rootLayout->addWidget(mainSplitter);
 
-    // Kết nối các sự kiện tương tác (Signals & Slots)
+    // Kết nối các sự kiện tương tác
     connect(m_sendBtn, &QPushButton::clicked, this, &MainWindow::onSendMessageClicked);
     connect(m_messageInput, &QLineEdit::returnPressed, this, &MainWindow::onSendMessageClicked);
     connect(m_sendFileBtn, &QPushButton::clicked, this, &MainWindow::onSendFileClicked);
@@ -174,181 +202,251 @@ void MainWindow::setupUi() {
     connect(m_statusCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onStatusChanged);
 }
 
-void MainWindow::applyStyleSheet() {
+void MainWindow::applyDiscordStyleSheet() {
     QString qss = R"(
+        /* Tổng thể ứng dụng */
         QWidget {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            font-size: 13px;
-            color: #24292F;
-            background-color: #FFFFFF;
+            font-family: 'gg sans', 'Whitney', 'Segoe UI', Arial, sans-serif;
+            font-size: 13.5px;
+            color: #DBDEE1;
+            background-color: #313338;
         }
 
-        /* Sidebar bên trái */
-        #leftPanel {
-            background-color: #F6F8FA;
-            border-right: 1px solid #D0D7DE;
+        /* 1. Sidebar bên trái (#2B2D31) */
+        #discordSidebar {
+            background-color: #2B2D31;
+            border-right: 1px solid #1F2023;
         }
 
-        #profileBox {
-            background-color: #FFFFFF;
-            border: 1px solid #D0D7DE;
-            border-radius: 6px;
-        }
-
-        #myProfileName {
-            font-size: 15px;
-            font-weight: bold;
-            color: #0969DA;
-        }
-
-        #myProfileEndpoint {
+        #discordDmHeader {
             font-size: 11px;
-            color: #57606A;
-        }
-
-        #peersHeader {
-            font-size: 11px;
-            font-weight: bold;
-            color: #57606A;
+            font-weight: 700;
+            color: #949BA4;
             letter-spacing: 0.5px;
-            margin-top: 6px;
+            padding: 14px 16px 8px 16px;
+            background-color: #2B2D31;
         }
 
-        #peerListWidget {
-            background-color: #FFFFFF;
-            border: 1px solid #D0D7DE;
-            border-radius: 6px;
+        #discordPeerList {
+            background-color: #2B2D31;
+            border: none;
+            outline: none;
+            padding: 4px 8px;
+        }
+
+        #discordPeerList::item {
+            height: 40px;
+            padding: 6px 10px;
+            margin-bottom: 2px;
+            border-radius: 4px;
+            color: #949BA4;
+            font-weight: 500;
+        }
+
+        #discordPeerList::item:hover {
+            background-color: #35373C;
+            color: #DBDEE1;
+        }
+
+        #discordPeerList::item:selected {
+            background-color: #404249;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+
+        /* 2. Thanh User Profile mini ở góc đáy (#232428) */
+        #discordUserFooter {
+            background-color: #232428;
+            border-top: 1px solid #1E1F22;
+        }
+
+        #discordAvatarBadge {
+            background-color: #5865F2;
+            color: #FFFFFF;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 17px;
+        }
+
+        #discordUserName {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #F2F3F5;
+            background: transparent;
+        }
+
+        #discordUserSubtext {
+            font-size: 11px;
+            color: #949BA4;
+            background: transparent;
+        }
+
+        #discordStatusCombo {
+            background-color: #1E1F22;
+            color: #23A55A;
+            border: 1px solid #2B2D31;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 11.5px;
+            font-weight: bold;
+        }
+
+        #discordStatusCombo QAbstractItemView {
+            background-color: #1E1F22;
+            color: #DBDEE1;
+            selection-background-color: #404249;
             outline: none;
         }
 
-        #peerListWidget::item {
-            padding: 10px;
-            border-bottom: 1px solid #F0F2F5;
-            border-radius: 4px;
+        /* 3. Cột chat chính bên phải (#313338) */
+        #discordChatArea {
+            background-color: #313338;
         }
 
-        #peerListWidget::item:hover {
-            background-color: #EBF5FF;
+        #discordChatHeader {
+            background-color: #313338;
+            border-bottom: 1px solid #1F2023;
         }
 
-        #peerListWidget::item:selected {
-            background-color: #DDF4FF;
-            color: #0969DA;
-            font-weight: bold;
+        #discordChannelTitle {
+            font-size: 15px;
+            font-weight: 700;
+            color: #F2F3F5;
         }
 
-        /* Cột chat bên phải */
-        #rightPanel {
-            background-color: #FFFFFF;
-        }
-
-        #chatHeaderWidget {
-            background-color: #F6F8FA;
-            border: 1px solid #D0D7DE;
-            border-radius: 6px;
-        }
-
-        #partnerHeaderLabel {
-            font-size: 14px;
-            font-weight: bold;
-            color: #1F2328;
-        }
-
-        #partnerStatusLabel {
+        #discordChannelSubtext {
             font-size: 12px;
-            color: #1A7F37;
-            font-weight: 500;
+            color: #949BA4;
         }
 
-        #chatHistoryView {
-            background-color: #FAFBFC;
-            border: 1px solid #D0D7DE;
-            border-radius: 6px;
-            padding: 12px;
+        #discordMessageFeed {
+            background-color: #313338;
+            border: none;
+            padding: 16px 20px;
         }
 
-        #fileProgressContainer {
-            background-color: #F6F8FA;
-            border: 1px solid #D0D7DE;
-            border-radius: 6px;
-        }
-
-        QProgressBar {
-            border: 1px solid #D0D7DE;
+        /* Thanh cuộn tối màu phong cách Discord */
+        QScrollBar:vertical {
+            background-color: #2B2D31;
+            width: 8px;
+            margin: 0;
             border-radius: 4px;
-            text-align: center;
-            background-color: #FFFFFF;
-            height: 18px;
         }
 
-        QProgressBar::chunk {
-            background-color: #2DA44E;
-            border-radius: 3px;
+        QScrollBar::handle:vertical {
+            background-color: #1A1B1E;
+            min-height: 20px;
+            border-radius: 4px;
         }
 
-        /* Thanh nhập liệu */
-        #messageInput {
-            border: 1px solid #D0D7DE;
-            border-radius: 6px;
-            padding: 8px 12px;
+        QScrollBar::handle:vertical:hover {
+            background-color: #111214;
+        }
+
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            height: 0px;
+        }
+
+        /* Khung tiến độ truyền file (Discord Embed Card) */
+        #discordFileEmbed {
+            background-color: #2B2D31;
+            border-left: 4px solid #5865F2;
+            border-radius: 4px;
+            margin: 0 16px 10px 16px;
+        }
+
+        #discordEmbedTitle {
             font-size: 13px;
-            background-color: #FFFFFF;
+            font-weight: 600;
+            color: #F2F3F5;
+            background: transparent;
         }
 
-        #messageInput:focus {
-            border: 1px solid #0969DA;
+        #discordProgressBar {
+            background-color: #1E1F22;
+            border: none;
+            border-radius: 4px;
+            height: 14px;
+            text-align: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #FFFFFF;
         }
 
-        #sendBtn {
-            background-color: #0969DA;
+        #discordProgressBar::chunk {
+            background-color: #5865F2;
+            border-radius: 4px;
+        }
+
+        /* 4. Thanh nhập liệu nổi (#383A40) */
+        #discordInputContainer {
+            background-color: #313338;
+        }
+
+        #discordInputPill {
+            background-color: #383A40;
+            border-radius: 8px;
+        }
+
+        #discordAttachBtn {
+            background-color: #4E5058;
+            color: #DBDEE1;
+            border: none;
+            border-radius: 5px;
+            padding: 7px 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        #discordAttachBtn:hover {
+            background-color: #6D6F78;
+            color: #FFFFFF;
+        }
+
+        #discordMessageInput {
+            background-color: transparent;
+            border: none;
+            color: #DBDEE1;
+            font-size: 14px;
+            padding: 4px;
+        }
+
+        #discordMessageInput:focus {
+            outline: none;
+        }
+
+        #discordSendBtn {
+            background-color: #5865F2;
             color: #FFFFFF;
             border: none;
-            border-radius: 6px;
-            padding: 8px 18px;
+            border-radius: 5px;
+            padding: 7px 16px;
+            font-size: 13px;
             font-weight: bold;
         }
 
-        #sendBtn:hover {
-            background-color: #0550AE;
-        }
-
-        #sendFileBtn {
-            background-color: #F6F8FA;
-            color: #24292F;
-            border: 1px solid #D0D7DE;
-            border-radius: 6px;
-            padding: 8px 14px;
-            font-weight: 500;
-        }
-
-        #sendFileBtn:hover {
-            background-color: #EAEFF5;
-        }
-
-        QComboBox {
-            border: 1px solid #D0D7DE;
-            border-radius: 4px;
-            padding: 3px 8px;
-            background-color: #FFFFFF;
+        #discordSendBtn:hover {
+            background-color: #4752C4;
         }
     )";
     setStyleSheet(qss);
 }
 
 void MainWindow::initMockData() {
-    // Nạp sẵn 3 bạn chat mẫu để giao diện trực quan ngay khi khởi chạy
+    // Nạp sẵn danh sách bạn bè trực tuyến
     addOrUpdatePeer("Alice", "192.168.1.15", 5001, "online", 2);
     addOrUpdatePeer("Bob", "192.168.1.20", 5002, "online", 0);
     addOrUpdatePeer("Charlie", "192.168.1.33", 5003, "away", 0);
 
-    // Mặc định chọn bạn chat đầu tiên
+    // Mặc định mở cuộc trò chuyện với Alice
     if (m_peerListWidget->count() > 0) {
         m_peerListWidget->setCurrentRow(0);
         onPeerSelected(m_peerListWidget->item(0));
 
-        // Nạp tin nhắn chào mừng mẫu
-        appendChatMessage("Alice", "Chào Trí, ứng dụng Socket chat LAN sẵn sàng rồi nhé!", "15:30", false);
-        appendChatMessage(m_myName, "Chào Alice! Mình đang kiểm thử giao diện Qt6.", "15:31", true);
+        // Nạp tin nhắn mẫu mang phong cách Discord
+        appendChatMessage("Alice", "Hey Tri, welcome to our Discord-style LAN Chat!", "Today at 15:30", false);
+        appendChatMessage(m_myName, "Looking sleek! The Discord dark theme is super clean.", "Today at 15:31", true);
+        appendChatMessage("Alice", "Ready to test file sharing whenever you want.", "Today at 15:32", false);
     }
 }
 
@@ -356,22 +454,35 @@ void MainWindow::setMyProfile(const QString& name, const QString& ip, int port) 
     m_myName = name;
     m_myTcpPort = port;
     if (m_myProfileLabel) m_myProfileLabel->setText(name);
-    if (m_myEndpointLabel) m_myEndpointLabel->setText("IP: " + ip + " | Port: " + QString::number(port));
+    if (m_myEndpointLabel) m_myEndpointLabel->setText("Port: " + QString::number(port));
+
+    // Cập nhật chữ viết tắt trên avatar
+    if (m_myAvatarLabel) {
+        QString initials = "US";
+        QStringList parts = name.split(" ", Qt::SkipEmptyParts);
+        if (parts.size() >= 2) {
+            initials = parts[0].left(1).toUpper() + parts[parts.size() - 1].left(1).toUpper();
+        } else if (!parts.isEmpty()) {
+            initials = parts[0].left(2).toUpper();
+        }
+        m_myAvatarLabel->setText(initials);
+    }
 }
 
 void MainWindow::addOrUpdatePeer(const QString& name, const QString& ip, int port, const QString& status, int unreadCount) {
     QString key = ip + ":" + QString::number(port);
-    QString displayText = QString("%1 (%2:%3) [%4]")
+    QString statusDot = (status.toLower() == "online") ? "[ONLINE]" : "[AWAY]";
+    QString displayText = QString("@ %1  %2  (%3:%4)")
                               .arg(name)
+                              .arg(statusDot)
                               .arg(ip)
-                              .arg(port)
-                              .arg(status.toUpper());
+                              .arg(port);
 
     if (unreadCount > 0) {
-        displayText += QString(" (%1 new)").arg(unreadCount);
+        displayText += QString("  [%1 NEW]").arg(unreadCount);
     }
 
-    // Kiểm tra xem peer đã tồn tại trong danh sách chưa
+    // Cập nhật nếu đã có trong danh sách
     for (int i = 0; i < m_peerListWidget->count(); ++i) {
         QListWidgetItem* item = m_peerListWidget->item(i);
         if (item->data(Qt::UserRole).toString() == key) {
@@ -380,7 +491,7 @@ void MainWindow::addOrUpdatePeer(const QString& name, const QString& ip, int por
         }
     }
 
-    // Nếu chưa có, thêm mới vào danh sách
+    // Thêm mục bạn bè mới
     QListWidgetItem* newItem = new QListWidgetItem(displayText, m_peerListWidget);
     newItem->setData(Qt::UserRole, key);
     newItem->setData(Qt::UserRole + 1, name);
@@ -398,34 +509,25 @@ void MainWindow::removePeer(const QString& peerKey) {
 }
 
 void MainWindow::appendChatMessage(const QString& sender, const QString& text, const QString& timeStr, bool isMine) {
-    QString bubbleHtml;
-    if (isMine) {
-        // Bong bóng tin nhắn bên phải (của mình) - Màu xanh
-        bubbleHtml = QString(
-            "<div style='margin-bottom: 12px; text-align: right;'>"
-            "  <div style='display: inline-block; max-width: 70%; text-align: left; background-color: #0969DA; color: #FFFFFF; padding: 8px 14px; border-radius: 12px 12px 2px 12px; font-size: 13px;'>"
-            "    <div>%1</div>"
-            "  </div>"
-            "  <div style='font-size: 10px; color: #8C959F; margin-top: 3px;'>%2</div>"
-            "</div>"
-        ).arg(text.toHtmlEscaped()).arg(timeStr);
-    } else {
-        // Bong bóng tin nhắn bên trái (của đối phương) - Màu xám sáng
-        bubbleHtml = QString(
-            "<div style='margin-bottom: 12px; text-align: left;'>"
-            "  <div style='font-size: 11px; font-weight: bold; color: #57606A; margin-bottom: 2px;'>%1</div>"
-            "  <div style='display: inline-block; max-width: 70%; text-align: left; background-color: #EAEFF5; color: #1F2328; padding: 8px 14px; border-radius: 12px 12px 12px 2px; font-size: 13px;'>"
-            "    <div>%2</div>"
-            "  </div>"
-            "  <div style='font-size: 10px; color: #8C959F; margin-top: 3px;'>%3</div>"
-            "</div>"
-        ).arg(sender.toHtmlEscaped()).arg(text.toHtmlEscaped()).arg(timeStr);
-    }
+    QString nameColor = isMine ? "#57F287" : "#5865F2"; // Xanh neon cho mình, Discord Blurple cho bạn
 
-    m_chatHtmlHistories[m_currentPeerKey] += bubbleHtml;
+    // Cấu trúc dòng tin nhắn chuẩn Discord (Tên in đậm + Giờ gửi màu xám nhạt + Nội dung ở dưới)
+    QString messageRowHtml = QString(
+        "<div style='margin-bottom: 14px; padding: 2px 0;'>"
+        "  <div style='margin-bottom: 3px;'>"
+        "    <span style='font-weight: 700; color: %1; font-size: 13.5px;'>%2</span>"
+        "    <span style='color: #949BA4; font-size: 11px; margin-left: 8px;'>%3</span>"
+        "  </div>"
+        "  <div style='color: #DBDEE1; font-size: 13.5px; line-height: 1.45; word-wrap: break-word;'>"
+        "    %4"
+        "  </div>"
+        "</div>"
+    ).arg(nameColor).arg(sender.toHtmlEscaped()).arg(timeStr).arg(text.toHtmlEscaped());
+
+    m_chatHtmlHistories[m_currentPeerKey] += messageRowHtml;
     m_chatHistoryView->setHtml(m_chatHtmlHistories[m_currentPeerKey]);
 
-    // Tự động cuộn xuống dòng tin nhắn mới nhất
+    // Cuộn mượt mà xuống dòng tin nhắn mới nhất
     QScrollBar* bar = m_chatHistoryView->verticalScrollBar();
     if (bar) {
         bar->setValue(bar->maximum());
@@ -448,7 +550,7 @@ void MainWindow::onSendMessageClicked() {
     QString text = m_messageInput->text().trimmed();
     if (text.isEmpty()) return;
 
-    QString now = QDateTime::currentDateTime().toString("hh:mm");
+    QString now = "Today at " + QDateTime::currentDateTime().toString("hh:mm");
     appendChatMessage(m_myName, text, now, true);
     m_messageInput->clear();
     m_messageInput->setFocus();
@@ -468,8 +570,8 @@ void MainWindow::onSendFileClicked() {
     QString fileName = info.fileName();
     qint64 fileSize = info.size();
 
-    // Giả lập tiến trình gửi file trực quan trên giao diện
-    setFileProgress(0, QString("Sending %1 (%2 KB)...").arg(fileName).arg(fileSize / 1024));
+    // Hiển thị Embed tiến trình gửi file kiểu Discord
+    setFileProgress(0, QString("Uploading %1 (%2 KB)...").arg(fileName).arg(fileSize / 1024));
 
     QTimer* timer = new QTimer(this);
     int* currentProgress = new int(0);
@@ -477,15 +579,19 @@ void MainWindow::onSendFileClicked() {
     connect(timer, &QTimer::timeout, this, [this, timer, currentProgress, fileName]() {
         *currentProgress += 15;
         if (*currentProgress >= 100) {
-            setFileProgress(100, QString("Sent %1 successfully!").arg(fileName));
+            setFileProgress(100, QString("Uploaded %1 successfully!").arg(fileName));
             timer->stop();
             timer->deleteLater();
             delete currentProgress;
 
-            // Tự ẩn sau 2 giây
+            // Thêm một thông báo file vào dòng chat
+            QString now = "Today at " + QDateTime::currentDateTime().toString("hh:mm");
+            appendChatMessage(m_myName, QString("[FILE SHARED] %1").arg(fileName), now, true);
+
+            // Tự động ẩn Embed sau 2 giây
             QTimer::singleShot(2000, this, &MainWindow::hideFileProgress);
         } else {
-            setFileProgress(*currentProgress, QString("Sending %1 (%2%)...").arg(fileName).arg(*currentProgress));
+            setFileProgress(*currentProgress, QString("Uploading %1 (%2%)...").arg(fileName).arg(*currentProgress));
         }
     });
 
@@ -496,19 +602,23 @@ void MainWindow::onPeerSelected(QListWidgetItem* item) {
     if (!item) return;
 
     m_currentPeerKey = item->data(Qt::UserRole).toString();
-    QString peerName = item->data(Qt::UserRole + 1).toString();
+    m_currentPeerName = item->data(Qt::UserRole + 1).toString();
     QString status = item->data(Qt::UserRole + 2).toString();
 
-    m_partnerHeaderLabel->setText(QString("Chatting with: %1 (%2)").arg(peerName).arg(m_currentPeerKey));
-    m_partnerStatusLabel->setText(status.toUpper());
+    m_partnerHeaderLabel->setText("@ " + m_currentPeerName);
+    m_partnerStatusLabel->setText(QString("(%1) - IP: %2").arg(status.toUpper()).arg(m_currentPeerKey));
+    m_messageInput->setPlaceholderText(QString("Message @%1... (Press Enter to send)").arg(m_currentPeerName));
 
-    // Nạp lại lịch sử chat của peer này
+    // Nạp lại toàn bộ lịch sử chat của bạn này
     m_chatHistoryView->setHtml(m_chatHtmlHistories[m_currentPeerKey]);
 }
 
 void MainWindow::onStatusChanged(int index) {
-    QString newStatus = (index == 0) ? "online" : "away";
-    if (m_partnerStatusLabel && m_currentPeerKey.isEmpty()) {
-        m_partnerStatusLabel->setText(newStatus.toUpper());
+    if (m_statusCombo) {
+        if (index == 0) {
+            m_statusCombo->setStyleSheet("color: #23A55A;"); // Xanh lá Discord
+        } else {
+            m_statusCombo->setStyleSheet("color: #F0B232;"); // Vàng cam Discord
+        }
     }
 }
