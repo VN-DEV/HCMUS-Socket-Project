@@ -494,22 +494,14 @@ void MainWindow::initMockData() {
     addOrUpdatePeer("Bob", "192.168.1.20", 5002, "online", 0);
     addOrUpdatePeer("Charlie", "192.168.1.33", 5003, "away", 0);
 
-    // Nạp chuỗi tin nhắn mẫu giống hệt ảnh chụp Messenger của người dùng
     m_currentPeerKey = "192.168.1.15:5001";
     m_currentPeerName = "Alice";
 
-    // Đoạn chat mẫu như ảnh
-    appendChatMessage("Alice", "lại", "15:28", false);
-    appendChatMessage("Alice", "xem coi có ch", "15:28", false);
-    appendChatMessage("Alice", "nào rảnh đổi mk đi", "15:29", false);
-    appendChatMessage(m_myName, "kh có m", "15:29", true);
-    appendChatMessage("Alice", "t mượn", "15:29", false);
-    appendChatMessage(m_myName, "Passchangednew_2", "15:30", true);
-    appendChatMessage("Alice", "check", "15:30", false);
-    appendChatMessage("Alice", "kh có code luôn à", "15:30", false);
-    appendChatMessage(m_myName, "kh thấy", "15:31", true);
-    appendChatMessage("Alice", "vl", "15:31", false);
-    appendChatMessage("Alice", "thua r", "15:31", false);
+    // Tin nhắn kiểm thử mẫu tiêu chuẩn
+    appendChatMessage("Alice", "Xin chào! Ứng dụng chat LAN P2P đã kết nối thành công.", "15:28", false);
+    appendChatMessage(m_myName, "Chào bạn! Mình đang kiểm thử giao diện bong bóng chat.", "15:29", true);
+    appendChatMessage("Alice", "Bong bóng tin nhắn bo tròn dạng viên thuốc nhìn rất mượt.", "15:30", false);
+    appendChatMessage(m_myName, "Chính xác, bo góc 18px mềm mại ôm sát nội dung.", "15:31", true);
 
     if (m_peerListWidget->count() > 0) {
         m_peerListWidget->setCurrentRow(0);
@@ -527,6 +519,7 @@ void MainWindow::renderMessageBubble(const QString& sender, const QString& text,
     bubble->setWordWrap(true);
     bubble->setMaximumWidth(480);
     bubble->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    bubble->setAttribute(Qt::WA_StyledBackground, true); // Đảm bảo Qt render chuẩn bo góc tròn
 
     if (isMine) {
         // Tin nhắn gửi đi (Bên phải): Căn phải, bong bóng đỏ san hô bo tròn 18px
