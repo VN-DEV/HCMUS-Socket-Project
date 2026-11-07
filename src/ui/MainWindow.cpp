@@ -463,10 +463,10 @@ void MainWindow::initMockData() {
         m_peerListWidget->setCurrentRow(0);
         onPeerSelected(m_peerListWidget->item(0));
 
-        // Nạp tin nhắn mẫu phong cách Discord bo góc
-        appendChatMessage("Alice", "Hey Tri, welcome to our Discord-style LAN Chat!", "Today at 15:30", false);
-        appendChatMessage(m_myName, "Looking sleek! The rounded corners make it look super modern.", "Today at 15:31", true);
-        appendChatMessage("Alice", "Ready to test file sharing whenever you want.", "Today at 15:32", false);
+        // Nạp tin nhắn mẫu phong cách bong bóng Messenger
+        appendChatMessage("Alice", "Chào Trí! Giao diện bong bóng chat Messenger nhìn quen thuộc và xịn hơn hẳn.", "15:30", false);
+        appendChatMessage(m_myName, "Đúng rồi! Cột ngoài vẫn là Discord Dark Theme, nhưng ô chứa tin nhắn thì bo tròn mềm mại kiểu Messenger.", "15:31", true);
+        appendChatMessage("Alice", "Test thử gửi file luôn đi bạn.", "15:32", false);
     }
 }
 
@@ -529,22 +529,31 @@ void MainWindow::removePeer(const QString& peerKey) {
 }
 
 void MainWindow::appendChatMessage(const QString& sender, const QString& text, const QString& timeStr, bool isMine) {
-    QString nameColor = isMine ? "#57F287" : "#5865F2"; // Xanh neon cho mình, Discord Blurple cho bạn
+    QString bubbleHtml;
+    if (isMine) {
+        // Bong bóng tin nhắn bên phải (của mình) - Phong cách Messenger
+        bubbleHtml = QString(
+            "<div style='margin-bottom: 12px; text-align: right;'>"
+            "  <div style='display: inline-block; max-width: 68%; text-align: left; background-color: #5865F2; color: #FFFFFF; padding: 10px 16px; border-radius: 18px 18px 4px 18px; font-size: 13.5px; line-height: 1.42; word-wrap: break-word;'>"
+            "    %1"
+            "  </div>"
+            "  <div style='font-size: 10px; color: #949BA4; margin-top: 3px; margin-right: 6px;'>%2</div>"
+            "</div>"
+        ).arg(text.toHtmlEscaped()).arg(timeStr);
+    } else {
+        // Bong bóng tin nhắn bên trái (của bạn chat) - Phong cách Messenger
+        bubbleHtml = QString(
+            "<div style='margin-bottom: 12px; text-align: left;'>"
+            "  <div style='font-size: 11px; font-weight: bold; color: #949BA4; margin-bottom: 3px; margin-left: 8px;'>%1</div>"
+            "  <div style='display: inline-block; max-width: 68%; text-align: left; background-color: #383A40; color: #DBDEE1; padding: 10px 16px; border-radius: 18px 18px 18px 4px; font-size: 13.5px; line-height: 1.42; word-wrap: break-word;'>"
+            "    %2"
+            "  </div>"
+            "  <div style='font-size: 10px; color: #949BA4; margin-top: 3px; margin-left: 8px;'>%3</div>"
+            "</div>"
+        ).arg(sender.toHtmlEscaped()).arg(text.toHtmlEscaped()).arg(timeStr);
+    }
 
-    // Cấu trúc dòng tin nhắn Discord với card bo góc nhẹ (border-radius: 8px)
-    QString messageRowHtml = QString(
-        "<div style='margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; background-color: rgba(35, 36, 40, 0.45);'>"
-        "  <div style='margin-bottom: 3px;'>"
-        "    <span style='font-weight: 700; color: %1; font-size: 13.5px;'>%2</span>"
-        "    <span style='color: #949BA4; font-size: 11px; margin-left: 8px;'>%3</span>"
-        "  </div>"
-        "  <div style='color: #DBDEE1; font-size: 13.5px; line-height: 1.45; word-wrap: break-word;'>"
-        "    %4"
-        "  </div>"
-        "</div>"
-    ).arg(nameColor).arg(sender.toHtmlEscaped()).arg(timeStr).arg(text.toHtmlEscaped());
-
-    m_chatHtmlHistories[m_currentPeerKey] += messageRowHtml;
+    m_chatHtmlHistories[m_currentPeerKey] += bubbleHtml;
     m_chatHistoryView->setHtml(m_chatHtmlHistories[m_currentPeerKey]);
 
     // Cuộn mượt mà xuống dòng tin nhắn mới nhất
@@ -570,7 +579,7 @@ void MainWindow::onSendMessageClicked() {
     QString text = m_messageInput->text().trimmed();
     if (text.isEmpty()) return;
 
-    QString now = "Today at " + QDateTime::currentDateTime().toString("hh:mm");
+    QString now = QDateTime::currentDateTime().toString("hh:mm");
     appendChatMessage(m_myName, text, now, true);
     m_messageInput->clear();
     m_messageInput->setFocus();
@@ -605,8 +614,8 @@ void MainWindow::onSendFileClicked() {
             delete currentProgress;
 
             // Thêm một thông báo file vào dòng chat
-            QString now = "Today at " + QDateTime::currentDateTime().toString("hh:mm");
-            appendChatMessage(m_myName, QString("[FILE SHARED] %1").arg(fileName), now, true);
+            QString now = QDateTime::currentDateTime().toString("hh:mm");
+            appendChatMessage(m_myName, QString("[File đính kèm] %1").arg(fileName), now, true);
 
             // Tự động ẩn Embed sau 2 giây
             QTimer::singleShot(2000, this, &MainWindow::hideFileProgress);
