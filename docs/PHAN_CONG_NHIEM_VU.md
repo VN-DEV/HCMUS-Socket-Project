@@ -110,3 +110,4 @@ Phu trach module: Truyen File Chunked 64KB (TCP) & Dieu phoi Phien Chat (Chat Ma
 - Tat ca 3 thanh vien dong gop dong deu 33.3% khoi luong cong viec cua do an.
 - Ma nguon duoc quan ly tap trung tren GitHub, phat trien tren cac nhanh (branch) rieng va merge vao main qua Pull Request.
 - Moi commit tuan thu quy tac ro rang, ghi chu thich day du, khong su dung bat ky ky tu bieu tuong cam xuc (emoji) nao.
+
