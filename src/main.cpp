@@ -2,6 +2,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include "ui/MainWindow.h"
+#include "ui/SetupDialog.h"
 
 /*
  * ============================================================================
@@ -29,8 +30,18 @@ int main(int argc, char *argv[]) {
     QApplication app(argc, argv);
     app.setApplicationName("HCMUS LAN Chat");
 
+    SetupDialog setupDlg;
+    if (setupDlg.exec() != QDialog::Accepted) {
+        WSACleanup();
+        return 0;
+    }
+
+    QString myName = setupDlg.getUserName();
+    int myTcpPort = setupDlg.getTcpPort();
+
     // 3. Hien thi cua so giao dien chinh
     MainWindow window;
+    window.setMyProfile(myName, "127.0.0.1", myTcpPort);
     window.show();
 
     int result = app.exec();

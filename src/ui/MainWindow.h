@@ -14,6 +14,8 @@
 #include <vector>
 #include <string>
 
+#include "network/UdpDiscovery.h"
+
 /*
  * ============================================================================
  * TẬP TIN: src/ui/MainWindow.h
@@ -65,6 +67,8 @@ private slots:
     void onSendMessageClicked();
     void onSendFileClicked();
     void onPeerSelected(QListWidgetItem* item);
+    void onRefreshPeerList();
+    void onToggleTheme();
 
 private:
     void setupUi();
@@ -73,15 +77,20 @@ private:
     void renderMessageBubble(const QString& sender, const QString& text, const QString& timeStr, bool isMine);
     void scrollToBottom();
 
-    // Các thành phần cột trái (Sidebar Discord)
-    QLabel* m_myAvatarLabel = nullptr;
-    QLabel* m_myProfileLabel = nullptr;
-    QLabel* m_myEndpointLabel = nullptr;
-    QListWidget* m_peerListWidget = nullptr;
+        // Các thành phần cột trái (Sidebar Modern Card)
+    QLabel* m_myProfileLabel = nullptr;      // Tên hiển thị (LEGION)
+    QLabel* m_myEndpointLabel = nullptr;     // Cổng TCP (Port: 5001)
+    QComboBox* m_statusCombo = nullptr;      // Dropdown Trực tuyến / Bận
+    QLabel* m_peerCountLabel = nullptr;      // Tiêu đề: Bạn bè trong mạng LAN (0)
+    QListWidget* m_peerListWidget = nullptr; // Danh sách bạn bè
 
-    // Các thành phần cột phải (Chat Area với bong bóng Messenger)
-    QLabel* m_partnerHeaderLabel = nullptr;
-    QLabel* m_partnerStatusLabel = nullptr;
+    // Các thành phần cột phải (Chat Area)
+    QLabel* m_partnerHeaderLabel = nullptr;  // Tiêu đề: "Chưa chọn người nhận"
+    QLabel* m_partnerStatusLabel = nullptr;  // Phụ đề hướng dẫn
+    QLabel* m_connectedBadge = nullptr;      // Nhãn viên thuốc "Đã kết nối"
+    QPushButton* m_disconnectBtn = nullptr;  // Nút "Ngắt kết nối" (đỏ nhạt)
+    QPushButton* m_themeBtn = nullptr;       // Nut chuyen Dark/Light mode
+
     QScrollArea* m_chatScrollArea = nullptr;
     QWidget* m_scrollContent = nullptr;
     QVBoxLayout* m_messagesLayout = nullptr;
@@ -89,16 +98,27 @@ private:
     QProgressBar* m_fileProgressBar = nullptr;
     QLabel* m_fileProgressLabel = nullptr;
     QWidget* m_fileProgressContainer = nullptr;
-    QLineEdit* m_messageInput = nullptr;
-    QPushButton* m_sendBtn = nullptr;
-    QPushButton* m_sendFileBtn = nullptr;
 
-    // Quản lý trạng thái nội bộ
+    void onDisconnectClicked(); // Thêm slot này
+
+    QPushButton* m_sendFileBtn = nullptr;    // Nút tròn "+" đính kèm file
+    QLineEdit* m_messageInput = nullptr;     // Ô gõ tin nhắn bo viên thuốc
+    QPushButton* m_sendBtn = nullptr;        // Nút tròn gửi tin
+    bool m_isDarkMode = false;
+
     QString m_currentPeerKey;
     QString m_currentPeerName;
-    QString m_myName = "Nguyen Manh Tri";
-    int m_myTcpPort = 5000;
+    QString m_myName = "";
+    int m_myTcpPort = 0;
+
+    UdpDiscovery m_UdpDiscovery; // Quản lý phát hiện peer qua UDP broadcast
+    QTimer* m_refreshTimer = nullptr; // Timer tự động refresh danh sách peer mỗi 5s
 
     // Lưu trữ lịch sử tin nhắn dạng danh sách cấu trúc cho từng bạn chat (Key: "IP:Port")
     std::map<QString, std::vector<UiChatMessage>> m_chatHistories;
+
+    // Socket TCP giữ cổng để không cho cửa sổ khác chọn trùng
+    SOCKET m_tcpListenSock = INVALID_SOCKET;
+    void startTcpListener(int port);
+    void stopTcpListener();
 };

@@ -17,7 +17,7 @@ file(GLOB_RECURSE PROJECT_SOURCES
     "src/*.h"
 )
 
-add_executable(lan_chat ${PROJECT_SOURCES})
+add_executable(lan_chat WIN32 ${PROJECT_SOURCES})
 target_include_directories(lan_chat PRIVATE src)
 
 target_link_libraries(lan_chat PRIVATE 

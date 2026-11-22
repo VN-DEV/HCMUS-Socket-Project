@@ -63,12 +63,32 @@ std::vector<Peer> UdpDiscovery::getOnlinePeers() {
 }
 
 bool UdpDiscovery::start(const std::string& myName, int myTcpPort, const std::string& status, int udpPort) {
+
     m_myName = myName;
     m_myTcpPort = myTcpPort;
     m_myStatus = status;
     m_udpPort = udpPort;
 
-    // TODO: Nguyễn Mạnh Trí sẽ hiện thực khởi tạo socket và bật 3 luồng tại đây
+    m_sendSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    m_recvSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    BOOL bOpt = true;
+    setsockopt(m_sendSocket, SOL_SOCKET, SO_BROADCAST, (const char*)&bOpt, sizeof(bOpt));
+    BOOL rOpt = true;
+    setsockopt(m_recvSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&rOpt, sizeof(rOpt));
+
+    sockaddr_in recvAddr;
+    recvAddr.sin_family = AF_INET;
+    recvAddr.sin_port = htons(m_udpPort);
+    recvAddr.sin_addr.s_addr = INADDR_ANY;
+    bind(m_recvSocket, (sockaddr*)&recvAddr, sizeof(recvAddr));
+
+    m_running = true;
+
+    m_broadcastThread = std::thread(&UdpDiscovery::broadcastLoop, this);
+    m_listenThread = std::thread(&UdpDiscovery::listenLoop, this);
+    m_timeoutThread = std::thread(&UdpDiscovery::timeoutLoop, this);
+
     return true;
 }
 
@@ -95,12 +115,74 @@ void UdpDiscovery::stop() {
 
 void UdpDiscovery::broadcastLoop() {
     // TODO: Nguyễn Mạnh Trí sẽ hiện thực vòng lặp broadcast gửi HELLO mỗi 3 giây tại đây
+    sockaddr_in broadcastAddr;
+    broadcastAddr.sin_family = AF_INET;
+    broadcastAddr.sin_port = htons(m_udpPort);
+    broadcastAddr.sin_addr.s_addr = inet_addr("255.255.255.255");
+
+    while (m_running == true){
+        std::string packet = Protocol::buildUdpHello(m_myName, m_myTcpPort, m_myStatus);
+        sendto(m_sendSocket, packet.c_str(),(int)packet.length(),0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
 }
 
 void UdpDiscovery::listenLoop() {
     // TODO: Nguyễn Mạnh Trí sẽ hiện thực vòng lặp recvfrom nhận HELLO và cập nhật danh bạ tại đây
+    while (m_running == true){
+        char buffer[1024];
+        sockaddr_in senderAddr;
+        int senderLen = sizeof(senderAddr);
+
+        int bytesRecv = recvfrom(m_recvSocket, buffer, sizeof(buffer) - 1 , 0, (sockaddr*)&senderAddr, &senderLen);
+        if (bytesRecv <= 0){
+            break;
+        }
+        buffer[bytesRecv] = '\0';
+    
+
+    char senderIp[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(senderAddr.sin_addr), senderIp, sizeof(senderIp));
+    std::string peerName, peerStatus;
+    int peerTcpPort = 0;
+    if (!Protocol::parseUdpHello( buffer, peerName, peerTcpPort, peerStatus)){
+        continue;
+    }
+
+    if (peerTcpPort == m_myTcpPort && (std::string(senderIp) == "127.0.0.1" || peerName == m_myName)){
+        continue;
+    }
+
+    {
+    std::lock_guard<std::mutex> lock(m_peersMutex);
+    Peer peer;
+    peer.name = peerName;
+    peer.ip = senderIp;
+    peer.tcpPort = peerTcpPort;
+    peer.status = peerStatus;
+    peer.lastSeen = std::chrono::steady_clock::now(); // Cập nhật mốc thời gian nhận gói
+    m_peers[peer.key()] = peer; // peer.key() là "IP:Port"
+    }
+}
 }
 
 void UdpDiscovery::timeoutLoop() {
     // TODO: Nguyễn Mạnh Trí sẽ hiện thực vòng lặp kiểm tra timeout 10 giây xóa peer tại đây
+   
+    while (m_running == true){
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        auto now = std::chrono::steady_clock::now();
+        std::lock_guard<std::mutex> lock(m_peersMutex);
+        for (auto it = m_peers.begin(); it != m_peers.end(); ){
+            auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - it->second.lastSeen).count();
+            if (elapsed > 10){
+                it = m_peers.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
+    
+
+
 }
