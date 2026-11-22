@@ -24,9 +24,13 @@ pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x
 
 ## 2. Installation & Build Instructions
 
-1. Open PowerShell or a terminal at the project root directory:
+### Quick Build (Windows 1-Click)
+Simply run or double-click `build.bat` in the root directory. It automatically configures and builds the project using CMake and Ninja.
+
+### Manual Build Instructions
+1. Open PowerShell or a terminal at the unzipped project root directory:
 ```powershell
-cd C:\Users\LEGION\Downloads\Socket-project
+cd <path-to-unzipped-project-folder>
 ```
 
 2. Generate the build configuration using CMake with the Ninja generator:
@@ -45,7 +49,8 @@ Upon successful compilation, the executable `lan_chat.exe` is generated in the `
 
 ## 3. How to Run
 
-Launch the application executable from the project root:
+### Quick Run
+Double-click `run.bat` or launch the application executable from the project root:
 ```powershell
 .\build\lan_chat.exe
 ```

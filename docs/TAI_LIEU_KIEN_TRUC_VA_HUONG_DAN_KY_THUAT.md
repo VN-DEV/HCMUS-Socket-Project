@@ -221,9 +221,9 @@ Socket-project/
 
 #### 7.2. Cac buoc bien dich
 
-1. Mo PowerShell hoac Terminal tai thu muc goc cua du an:
+1. Mo PowerShell hoac Terminal tai thu muc goc cua du an (hoac click dup file build.bat):
    ```powershell
-   cd C:\Users\LEGION\Downloads\Socket-project
+   cd <duong_dan_thu_muc_du_an>
    ```
 
 2. Khoi tao thu muc build voi CMake va trinh sinh Ninja:
