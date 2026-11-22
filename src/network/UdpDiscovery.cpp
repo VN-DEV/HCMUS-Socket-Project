@@ -117,9 +117,8 @@ void UdpDiscovery::stop() {
 std::vector<std::string> UdpDiscovery::getBroadcastAddresses() {
     std::vector<std::string> bcastAddrs;
     bcastAddrs.push_back("255.255.255.255");
-    bcastAddrs.push_back("127.255.255.255");
-    bcastAddrs.push_back("127.0.0.1");
 
+    bool hasNonLoopback = false;
     SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s != INVALID_SOCKET) {
         INTERFACE_INFO ifList[20];
@@ -138,6 +137,9 @@ std::vector<std::string> UdpDiscovery::getBroadcastAddresses() {
                 char bcastStr[32];
                 if (inet_ntop(AF_INET, &bcastAddr, bcastStr, sizeof(bcastStr))) {
                     std::string str(bcastStr);
+                    if (str != "127.255.255.255") {
+                        hasNonLoopback = true;
+                    }
                     if (std::find(bcastAddrs.begin(), bcastAddrs.end(), str) == bcastAddrs.end()) {
                         bcastAddrs.push_back(str);
                     }
@@ -145,6 +147,9 @@ std::vector<std::string> UdpDiscovery::getBroadcastAddresses() {
             }
         }
         closesocket(s);
+    }
+    if (!hasNonLoopback) {
+        bcastAddrs.push_back("127.0.0.1");
     }
     return bcastAddrs;
 }
