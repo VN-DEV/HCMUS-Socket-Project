@@ -18,14 +18,17 @@ CMakeFiles/
 *.ninja_log
 
 # Binary and object files
-*.exe
-*.dll
 *.so
 *.dylib
 *.obj
 *.o
 *.a
 *.lib
+
+# Whitelist root launcher and runtime environment for standalone deployment
+!lan_chat.exe
+!runtime/
+!runtime/**
 
 # Runtime downloaded files (keep folder intact)
 downloads/*

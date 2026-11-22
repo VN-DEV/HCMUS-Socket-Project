@@ -49,8 +49,16 @@ Upon successful compilation, the executable `lan_chat.exe` is generated in the `
 
 ## 3. How to Run
 
-### Quick Run
-Double-click `run.bat` or launch the application executable from the project root:
+### Instant Run (No Setup or Tools Required)
+The repository includes a complete standalone runtime environment in `runtime/`.
+Simply double-click `lan_chat.exe` (or `run.bat`) in the project root folder to launch the application immediately:
+```powershell
+.\lan_chat.exe
+```
+No installation of Qt6, CMake, or C++ compilers is required.
+
+### Running from Build Directory
+If you compiled from source:
 ```powershell
 .\build\lan_chat.exe
 ```
