@@ -1,6 +1,7 @@
 #include "UdpDiscovery.h"
 #include "protocol/Protocol.h"
 #include <iostream>
+#include <algorithm>
 
 /*
  * ============================================================================
@@ -113,57 +114,117 @@ void UdpDiscovery::stop() {
     m_peers.clear();
 }
 
-void UdpDiscovery::broadcastLoop() {
-    // TODO: Nguyễn Mạnh Trí sẽ hiện thực vòng lặp broadcast gửi HELLO mỗi 3 giây tại đây
-    sockaddr_in broadcastAddr;
-    broadcastAddr.sin_family = AF_INET;
-    broadcastAddr.sin_port = htons(m_udpPort);
-    broadcastAddr.sin_addr.s_addr = inet_addr("255.255.255.255");
+std::vector<std::string> UdpDiscovery::getBroadcastAddresses() {
+    std::vector<std::string> bcastAddrs;
+    bcastAddrs.push_back("255.255.255.255");
+    bcastAddrs.push_back("127.255.255.255");
+    bcastAddrs.push_back("127.0.0.1");
 
-    while (m_running == true){
+    SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s != INVALID_SOCKET) {
+        INTERFACE_INFO ifList[20];
+        DWORD bytesReturned = 0;
+        if (WSAIoctl(s, SIO_GET_INTERFACE_LIST, NULL, 0, ifList, sizeof(ifList), &bytesReturned, NULL, NULL) == 0) {
+            int numIf = bytesReturned / sizeof(INTERFACE_INFO);
+            for (int i = 0; i < numIf; ++i) {
+                if (!(ifList[i].iiFlags & IFF_UP)) continue;
+                sockaddr_in* pAddr = (sockaddr_in*)&(ifList[i].iiAddress);
+                sockaddr_in* pMask = (sockaddr_in*)&(ifList[i].iiNetmask);
+                u_long ip = pAddr->sin_addr.s_addr;
+                u_long mask = pMask->sin_addr.s_addr;
+                u_long bcast = ip | (~mask);
+                in_addr bcastAddr;
+                bcastAddr.s_addr = bcast;
+                char bcastStr[32];
+                if (inet_ntop(AF_INET, &bcastAddr, bcastStr, sizeof(bcastStr))) {
+                    std::string str(bcastStr);
+                    if (std::find(bcastAddrs.begin(), bcastAddrs.end(), str) == bcastAddrs.end()) {
+                        bcastAddrs.push_back(str);
+                    }
+                }
+            }
+        }
+        closesocket(s);
+    }
+    return bcastAddrs;
+}
+
+bool UdpDiscovery::isLocalAddress(const std::string& ip) {
+    if (ip == "127.0.0.1" || ip == "localhost") return true;
+
+    SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s != INVALID_SOCKET) {
+        INTERFACE_INFO ifList[20];
+        DWORD bytesReturned = 0;
+        if (WSAIoctl(s, SIO_GET_INTERFACE_LIST, NULL, 0, ifList, sizeof(ifList), &bytesReturned, NULL, NULL) == 0) {
+            int numIf = bytesReturned / sizeof(INTERFACE_INFO);
+            for (int i = 0; i < numIf; ++i) {
+                sockaddr_in* pAddr = (sockaddr_in*)&(ifList[i].iiAddress);
+                char ifIp[32];
+                if (inet_ntop(AF_INET, &(pAddr->sin_addr), ifIp, sizeof(ifIp))) {
+                    if (ip == ifIp) {
+                        closesocket(s);
+                        return true;
+                    }
+                }
+            }
+        }
+        closesocket(s);
+    }
+    return false;
+}
+
+void UdpDiscovery::broadcastLoop() {
+    while (m_running == true) {
         std::string packet = Protocol::buildUdpHello(m_myName, m_myTcpPort, m_myStatus);
-        sendto(m_sendSocket, packet.c_str(),(int)packet.length(),0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
+        auto bcastAddrs = getBroadcastAddresses();
+        for (const auto& bcastIp : bcastAddrs) {
+            sockaddr_in broadcastAddr;
+            broadcastAddr.sin_family = AF_INET;
+            broadcastAddr.sin_port = htons(m_udpPort);
+            broadcastAddr.sin_addr.s_addr = inet_addr(bcastIp.c_str());
+            sendto(m_sendSocket, packet.c_str(), (int)packet.length(), 0, (sockaddr*)&broadcastAddr, sizeof(broadcastAddr));
+        }
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
 }
 
 void UdpDiscovery::listenLoop() {
-    // TODO: Nguyễn Mạnh Trí sẽ hiện thực vòng lặp recvfrom nhận HELLO và cập nhật danh bạ tại đây
-    while (m_running == true){
+    while (m_running == true) {
         char buffer[1024];
         sockaddr_in senderAddr;
         int senderLen = sizeof(senderAddr);
 
-        int bytesRecv = recvfrom(m_recvSocket, buffer, sizeof(buffer) - 1 , 0, (sockaddr*)&senderAddr, &senderLen);
-        if (bytesRecv <= 0){
+        int bytesRecv = recvfrom(m_recvSocket, buffer, sizeof(buffer) - 1, 0, (sockaddr*)&senderAddr, &senderLen);
+        if (bytesRecv <= 0) {
             break;
         }
         buffer[bytesRecv] = '\0';
-    
 
-    char senderIp[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(senderAddr.sin_addr), senderIp, sizeof(senderIp));
-    std::string peerName, peerStatus;
-    int peerTcpPort = 0;
-    if (!Protocol::parseUdpHello( buffer, peerName, peerTcpPort, peerStatus)){
-        continue;
-    }
+        char senderIp[INET_ADDRSTRLEN];
+        inet_ntop(AF_INET, &(senderAddr.sin_addr), senderIp, sizeof(senderIp));
+        std::string peerName, peerStatus;
+        int peerTcpPort = 0;
+        if (!Protocol::parseUdpHello(buffer, peerName, peerTcpPort, peerStatus)) {
+            continue;
+        }
 
-    if (peerTcpPort == m_myTcpPort && (std::string(senderIp) == "127.0.0.1" || peerName == m_myName)){
-        continue;
-    }
+        // Chi bo qua neu goi tin den tu chinh may nay VA trung cong TCP cua minh
+        if (isLocalAddress(senderIp) && peerTcpPort == m_myTcpPort) {
+            continue;
+        }
 
-    {
-    std::lock_guard<std::mutex> lock(m_peersMutex);
-    Peer peer;
-    peer.name = peerName;
-    peer.ip = senderIp;
-    peer.tcpPort = peerTcpPort;
-    peer.status = peerStatus;
-    peer.lastSeen = std::chrono::steady_clock::now(); // Cập nhật mốc thời gian nhận gói
-    m_peers[peer.key()] = peer; // peer.key() là "IP:Port"
+        {
+            std::lock_guard<std::mutex> lock(m_peersMutex);
+            Peer peer;
+            peer.name = peerName;
+            peer.ip = senderIp;
+            peer.tcpPort = peerTcpPort;
+            peer.status = peerStatus;
+            peer.lastSeen = std::chrono::steady_clock::now(); // Cap nhat moc thoi gian nhan goi
+            m_peers[peer.key()] = peer; // peer.key() la "IP:Port"
+        }
     }
-}
 }
 
 void UdpDiscovery::timeoutLoop() {

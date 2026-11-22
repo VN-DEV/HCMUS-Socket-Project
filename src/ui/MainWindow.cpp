@@ -40,7 +40,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     m_refreshTimer = new QTimer(this);
     connect(m_refreshTimer, &QTimer::timeout, this, &MainWindow::onRefreshPeerList);
-    m_refreshTimer->start(5000); // Refresh every 5 seconds
+    m_refreshTimer->start(1000); // Refresh moi giay (1s) de hien thi peer ngay lap tuc
     //initMockData();
 }
 

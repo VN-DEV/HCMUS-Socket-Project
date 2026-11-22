@@ -48,9 +48,13 @@ public:
 
 private:
     // Các hàm vòng lặp chạy trên luồng riêng (Worker Threads)
-    void broadcastLoop(); // Luồng gửi broadcast mỗi 3s
+    void broadcastLoop(); // Luồng gửi broadcast mỗi 2s
     void listenLoop();    // Luồng lắng nghe gói UDP
     void timeoutLoop();   // Luồng kiểm tra timeout 10s
+
+    // Tiện ích mạng phát hiện IP và địa chỉ Broadcast mạng LAN
+    std::vector<std::string> getBroadcastAddresses();
+    bool isLocalAddress(const std::string& ip);
 
     // Thông tin của bản thân
     std::string m_myName;
