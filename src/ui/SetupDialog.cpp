@@ -9,7 +9,7 @@
 SetupDialog::SetupDialog(QWidget* parent)
     : QDialog(parent) {
     setWindowTitle("Thiết lập Người dùng - HCMUS P2P Chat");
-    setFixedSize(500, 520);
+    setFixedSize(500, 410);
     setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint); // Ẩn nút dấu hỏi ?
 
     setupUi();
@@ -78,27 +78,10 @@ void SetupDialog::setupUi() {
 
     connect(m_portSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &SetupDialog::onPortChanged);
 
-    rootLayout->addSpacing(6);
-
-    // 4. Hộp mẹo (Tip Callout Card) bo tròn nền xanh nhạt
-    QFrame* tipFrame = new QFrame(this);
-    tipFrame->setObjectName("tipFrame");
-    QVBoxLayout* tipLayout = new QVBoxLayout(tipFrame);
-    tipLayout->setContentsMargins(16, 14, 16, 14);
-
-    QLabel* tipText = new QLabel(
-        "<span style='color: #0084FF; font-weight: bold;'>Mẹo mở nhiều người trên 1 máy:</span> "
-        "<span style='color: #0077CC;'>Mỗi cửa sổ chọn một cổng khác nhau (5001, 5002, 5003...). "
-        "Ứng dụng đã tự động kiểm tra và gợi ý sẵn cổng đang trống cho bạn!</span>", 
-        tipFrame);
-    tipText->setWordWrap(true);
-    tipText->setFont(QFont("Segoe UI", 10));
-    tipLayout->addWidget(tipText);
-
-    rootLayout->addWidget(tipFrame);
+    rootLayout->addSpacing(12);
     rootLayout->addStretch(1);
 
-    // 5. Hai nút đáy (Thoát và Vào phòng Chat)
+    // 4. Hai nút đáy (Thoát và Vào phòng Chat)
     QHBoxLayout* btnLayout = new QHBoxLayout();
     btnLayout->setSpacing(16);
 
@@ -175,12 +158,6 @@ void SetupDialog::applyStyleSheet() {
             font-size: 13px;
             font-weight: 700;
             color: #0084FF;
-        }
-
-        #tipFrame {
-            background-color: #EBF8FF;
-            border: 1.5px solid #BAE3FF;
-            border-radius: 14px;
         }
 
         #cancelBtn {
